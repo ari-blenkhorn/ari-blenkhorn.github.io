@@ -1,0 +1,77 @@
+/* HEADER PROMO NOTIFICATION BAR STYLES */
+
+.hbar-height	{ height: 32px; }
+
+#hbar-bar	{
+		background-color: #50C602;
+		width: 100%;
+		min-height: 30px;
+		#background-image: url("hbar-background.png");
+		#background-repeat: no-repeat;
+		border-bottom: #000000 0px solid;
+		position: fixed;
+		top: 0px;
+		left: 0px;
+		z-index: 1010;
+		-moz-box-shadow: 5px 5px 5px rgba(0, 30, 150, 0.25);
+		-webkit-box-shadow: 5px 5px 5px rgba(0, 30, 150, 0.25);
+		box-shadow: 5px 5px 5px rgba(0, 30, 150, 0.25);
+		}
+
+.hbar-content	{
+		color: #FFFFFF;
+		padding: 7px 3px 0px 46px;
+		}
+
+.hbar-title	{
+		font: 15px arial, sans-serif;
+		font-weight: bold;
+		line-height: normal;
+		}
+
+.promofloat-right
+		{ float: right; }
+
+.promoclear	{ clear: both; }
+
+.hbar-icon	{
+		width: 30px;
+		height: 30px;
+		display: block;
+		margin: 0px 0px 0px 0px;
+		}
+
+
+
+
+/* HEADER BAR LINK COLORS */
+
+#hbar-bar a:link, 
+#hbar-bar a:visited, 
+#hbar-bara:active 	{ color: #FFFFFF; text-decoration: none; }
+
+#hbar-bar a:hover 	{ color: #CCFF99; text-decoration: none; }
+
+
+
+
+/***************
+MEDIA QUERIES HEADERBAR - FOR MOBILE SCREENS
+***************/
+
+@media handheld and (max-width: 482px),
+   screen and (max-device-width: 482px),
+   screen and (max-width: 482px) 
+	{
+
+
+.hbar-hide	{ display: none; }
+
+
+	}
+/***************
+END MEDIA QUERIES HEADERBAR - FOR MOBILE SCREENS
+***************/
+
+
+

@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html>
+  <head>
+    <title>Static Objects in Dynamically Loaded C++ Modules</title>
+<link rel="stylesheet" href="headerbar-promo/headerbar-style.css" type="text/css">
+  </head>
+
+  <body>
+<script type="text/javascript" src="headerbar-promo.js"></script>
+      <h1>Static Objects in Dynamically Loaded C++ Modules</h1>
+
+When you're dynamically loading a C++ .so into a main program which
+was written in C, the constructor functions for static objects are
+never called.  Why do we care?  For me, the reason to care is that I
+want to write extension modules in C++ for the <A
+HREF="http://www.python.org">Python</A> language.  The Python
+interpreter is written in C, and recompiling it with C++ is a real
+pain (if you can get it to compile that way at all!), so I need to
+get dynamic loading of my C++ modules to work correctly with the 
+unmodified interpreter.
+
+<p>
+<H3>What's Going Wrong</H3>
+When you compile a C++ file to a .o, the C++ compiler creates special
+functions to call the constructors of any static objects.  Since the
+Python interpreter is written & compiled in C, and therefore doesn't
+know about constructors, it never calls these magic functions when a
+C++ module is dynamically loaded.  So, we need to make sure that these
+functions get called.
+
+<p>
+<H3>How to Fix It</H3> 
+
+Basically, you compile all your files to .o's, inspect the .o files
+(and any libraries you're using) to find the magic functions, then
+construct a function that calls all the magic ones.  I've written a
+little <A HREF="static_construct.py">Python
+script</A> to do this.  It's really pretty braindead; you give it a
+list of .o's and libraries, it writes (to stdout) a file that contains
+one function, called static_construct.  Redirect this to a file, and
+compile it.  Put static_construct's prototype in your module, and
+write your module so that it calls static_construct() right away.  (In
+Python modules, that means the first thing initxxxmodule does is call
+static_construct().)  You only have to make these changes to your
+module once, not every time you compile.  Link everything together
+into the module.  And now, when the Python interpreter loads your
+module, the constructors get called.  Much fun.
+
+<p>
+
+On an Irix machine, the magic functions all start with __sti__.
+(There are also destructor-calling functions for these objects,
+starting with __std__, but probably you don't really care about
+destructing at the end of the program.  If you do you can figure it
+out from the way I'm doing constructors.)
+
+<p>
+
+So now the relevant part of my makefile looks like this:
+<p>
+<pre>
+mymodule.so:	$(MYOBJ)
+	static_construct $(MYOBJ) /usr/lib/libC.so $(CORIOLISDIR)/lib/sgi_53/libcsupport.a > sc.c
+	CC $(WARNINGS) -c $(CFLAGS) $(IFLAGS) sc.c -o sc.o
+	ld -shared sc.o $(MYOBJ)  -o mymodule.so -L$(CORIOLISDIR)/lib/sgi_53 -lcsupport
+</pre>
+
+Many, many thanks to David Baraff for figuring out how to do this.
+
+      <hr>
+<A HREF="index.html">Back to my home page</A>
+<p>
+<address><a href="mailto:ari+@cs.cmu.edu">Ari Rapkin</a></address>
+<!-- Created: Tue Oct 29 13:44:49 EST 1996 -->
+<!-- hhmts start -->
+Last modified: Tue Oct 29 14:06:22 EST 1996
+<!-- hhmts end -->
+  </body>
+</html>
