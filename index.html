@@ -1,6 +1,6 @@
 <html>
-<head> 
-<title> Ari Rapkin Blenkhorn </title> 
+<head>
+<title> Ari Rapkin Blenkhorn </title>
 </head>
 
 <body bgcolor="#eeeeee">
@@ -11,7 +11,7 @@
   <tr>
   <td>
 
-  <img alt="Ari Rapkin Blenkhorn's Photo" align=left src="Ari_maroon_dress_June2017.jpg"> <br> 
+  <img alt="Ari Rapkin Blenkhorn's Photo" align=left src="Ari_maroon_dress_June2017.jpg"> <br>
   </td>
   
   <td>
@@ -34,14 +34,14 @@
 
  <h3>GPU-accelerated rendering of atmospheric glories</h3>
  
-<table width="90%"> 
-<tr> 
+<table width="90%">
+<tr>
  <td>
 Glories are colorful atmospheric phenomena related to rainbows and coronas. They are commonly seen from aircraft when clouds are present and the sun is on the opposite side of the aircraft from the observer.
 <p>
 I have developed a highly-parallel GPGPU implementation of the Mie scattering equations which accelerates calculation of per-wavelength light scattering. The Mie calculations for each scattering angle and wavelength of light are independent of the calculations for any other, and can be performed simultaneously. My implementation dispatches large groups of these calculations to the GPU to process in parallel. I use a two-dimensional Sobol sequence to sample from (<i>wavelength</i>, <i>scattering angle</i>) space. The 2D Sobol technique ensures that the samples are well-distributed, without large gaps or clumps, thereby reducing the number of scattering calculations needed to achieve visually-acceptable results. The Sobol sampling calculations are also performed in parallel and use a recently-developed technique which precomputes partial results. Overall this work renders atmospheric glories at much faster speeds than previous serial CPU techniques, while maintaining high levels of visual fidelity as measured by both physical and perceptual image error metrics. Additionally, it yields equivalent-quality results with far fewer Mie calculations. The results obtained for glories apply fully or in part to related atmospheric phenomena.
 <p>
-My goal is to produce perceptually-accurate images of atmospheric phenomena at real-time rates for use in games, VR, and other interactive applications. 
+My goal is to produce perceptually-accurate images of atmospheric phenomena at real-time rates for use in games, VR, and other interactive applications.
 </td>
 <td>
  <a title="Glory photo by Sandstein (Own work) [CC BY 3.0 (http://creativecommons.org/licenses/by/3.0)], via Wikimedia Commons" href="https://commons.wikimedia.org/wiki/File%3AGlory_on_clouds.JPG"><img height="270" alt="Glory on clouds" src="Glory_on_clouds.JPG"/></a>
@@ -91,8 +91,9 @@ displayed to the screen.
   <ul>
   <li> Ph.D., <a href="http://www.umbc.edu">University of Maryland, Baltimore County</a> (UMBC), <br>
 	   <a href="http://www.csee.umbc.edu/">
-       Department of Computer Science and Electrical Engineering</a> <br>
-	   Defended September 2018, degree to be conferred December 2018.
+       Department of Computer Science and Electrical Engineering</a>, December 2018.<br>
+       GPU-accelerated rendering of atmospheric glories.
+
   <li> M.S. in <a href="http://www.cs.cmu.edu">Computer Science</a> (graphics and animation), <br>
 		<a href="http://www.cmu.edu">Carnegie Mellon University</a>, December 1997
   <li> M.C.S. in <a href="http://www.cs.virginia.edu">Computer Science</a> (computer vision), <a href="http://www.virginia.edu">University of Virginia</a>, May 1995
@@ -114,12 +115,12 @@ displayed to the screen.
 	   1989-1994
   <p>
 	<li> Research Intern, Graphics and Interaction Research lab, <br>
-		<a href="http://www.parc.com">XEROX Palo Alto Research Center</a> (PARC), Palo Alto, CA, 1996 
+		<a href="http://www.parc.com">XEROX Palo Alto Research Center</a> (PARC), Palo Alto, CA, 1996
 	<li> Research Intern, <a href="http://www.hpl.hp.com/techreports/Compaq-DEC/SRC-RR-157.pdf">Lectrice project</a>, DEC Systems Research Center (SRC), Palo Alto, CA, 1995
 	
   </ul>
   <h4>I have one <a href="http://patft.uspto.gov/netacgi/nph-Parser?Sect1=PTO1&Sect2=HITOFF&d=PALL&p=1&u=%2Fnetahtml%2FPTO%2Fsrchnum.htm&r=1&f=G&l=50&s1=9,613,322.PN.&OS=PN/9,613,322&RS=PN/9,613,322">US Patent</a>, two skydiving <a href="https://en.wikipedia.org/wiki/Jump_for_the_Cause">world records</a>, and credits on <a href="http://www.imdb.com/name/nm0710760/">six films</a>. <br>
-  My Erdos number is 4, and my Bacon number is 3. 
+  My Erdos number is 4, and my Bacon number is 3.
 
 
 </body>
