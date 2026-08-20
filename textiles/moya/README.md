@@ -1,4 +1,4 @@
-Developer: Ari Rapkin Blenkhorn <a href="mailto:ari@acm.org">ari@acm.org </a>) <br>
+Developer: Ari Rapkin Blenkhorn (<a href="mailto:ari@acm.org">ari@acm.org </a>) <br>
 Proof-of-concept (Unity Editor demo) - October 2024 <br>
 MoYa 1.0 (Javascript) - ongoing
 
