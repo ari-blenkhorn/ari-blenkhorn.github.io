@@ -1,0 +1,218 @@
+/* Sidebar UI */
+.sidebar {
+	width: 280px;
+	min-width: 280px;
+	height: 100vh;
+	background: #252526;
+	padding: 20px;
+	box-shadow: 2px 0 5px rgba(0,0,0,0.3);
+	display: flex;
+	flex-direction: column;
+	flex-shrink: 0; /* Prevents ribbon/canvas from squashing sidebar */
+	gap: 20px;
+	z-index: 1001; /* Keeps sidebar OVER the ribbon if they collide */
+	border-right: 1px solid #444;
+	overflow-y: auto; /* allow scrolling if content is long */
+	transition: margin-left 0.3s ease;
+}
+
+.section-toggle {
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+.section-toggle:hover { color: #00ff00; }
+
+.section-content {
+    max-height: 1000px; /* Large enough for any section */
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, opacity 0.3s;
+}
+
+/* When the parent section is collapsed */
+.sidebar-section.collapsed .section-content {
+    max-height: 0;
+    opacity: 0;
+    margin: 0;
+}
+
+/* Rotate the arrow when collapsed */
+.sidebar-section.collapsed .arrow {
+    transform: rotate(-90deg);
+}
+
+.arrow {
+    transition: transform 0.3s;
+    font-size: 0.8rem;
+}
+
+
+.sidebar.collapsed {
+    margin-left: -280px; /* Match your sidebar width */
+    visibility: hidden;
+}
+
+/* Header Buttons */
+.sidebar-header {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    /* margin-bottom: 10px; */
+	padding: 10px;
+    background: #333;
+    position: sticky; /* Keep buttons visible while scrolling sidebar */
+    top: 0;
+    z-index: 2;
+}
+
+.sidebar-header button {
+    width: auto;
+    padding: 5px 10px;
+    background: #333;
+}
+
+/* Floating Open Button */
+#openSidebar {
+    position: absolute; /* Floating above the canvas */
+    top: 60px;			/* 20 px below the 40px ribbon */
+    left: 10px;
+	padding 10px;
+    z-index: 2000;       /* Keep it on top of everything else */
+    width: 35px;        /* Fixed width so it's a square */
+    height: 35x;
+    background: #007acc;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+/* Ensure it stays hidden when the sidebar is open */
+.hidden { display: none !important; }
+
+        .sidebar .section {
+            border-bottom: 1px solid #3e3e3e;
+            padding-bottom: 15px;
+			flex-shrink: 0;
+        }
+
+        h2 { font-size: 1.2rem; margin-top: 0; color: #007acc; }
+        
+/* Fix for any buttons or inputs that might be stretching weirdly */
+.sidebar input, 
+.sidebar button, 
+.sidebar select {
+    width: 100%;
+    box-sizing: border-box; /* Includes padding in the width calculation */
+    margin-bottom: 8px;
+}
+
+        .sidebar button {
+            padding: 10px;
+            background-color: #007acc;
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        button:hover { background-color: #005a9e; }
+		
+		/* Standard State (Red/Danger) */
+		#revertBtn #clearBtn #factoryResetBtn{
+			background-color: #d9534f;
+			transition: all 0.2s ease;
+			opacity: 1;
+			cursor: pointer;
+		}
+
+		#revertBtn:hover:not(:disabled) {
+			background-color: #c9302c;
+		}
+		#clearBtn:hover:not(:disabled) {
+			background-color: #c9302c;
+		}
+
+		#factoryResetBtn:hover:not(:disabled) {
+			background-color: #c9302c;
+		}
+
+		/* Disabled State */
+		button:disabled {
+			background-color: #444 !important; /* Force gray background */
+			color: #888 !important;
+			cursor: not-allowed;
+			opacity: 0.5;
+			box-shadow: none;
+		}
+
+        .status-box {
+            font-size: 0.85rem;
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            color: #00ff00;
+            font-family: monospace;
+            min-height: 150px;  /* adjust based on how many lines of text we have */
+			line-height: 1.4;
+			white-space: pre-wrap; /* Keeps the line breaks clean */
+        }
+		
+		.toggle-group {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			margin-top: 8px;
+			font-size: 0.85rem;
+		}
+
+		.control-group {
+			display: flex;
+			flex-direction: column;
+			gap: 5px;
+			margin-bottom: 10px;
+			border: 1px solid #444;
+
+		}
+
+		.control-group label {
+			font-size: 0.8rem;
+			color: #aaa;
+		}
+
+input[type="file"] { 
+	width: 100%; 
+	margin-bottom: 10px; 
+}
+
+input[type="range"] {
+	width: 100%;
+	cursor: pointer;
+}
+
+input[type="number"] {
+	background: #111;
+	border: 1px solid #444;
+	color: #00ff00;
+	padding: 5px;
+	border-radius: 4px;
+}
+
+
+
+.sidebar input[type="checkbox"] {
+	width: auto;
+}
+.sidebar input[type="color"] {
+	width: 30px;
+}
+

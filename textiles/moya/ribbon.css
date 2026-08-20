@@ -1,0 +1,63 @@
+/* Make the ribbon float at the top of the drawing area */
+.display-ribbon {
+	position: absolute; /* Float OVER the top of the canvas area */
+    top: 0;
+    left: 0;
+    right: 0;
+	width: 100%; /* of the WORKSPACE */
+    height: 40px;
+    background: rgba(45, 45, 45, 0.9); /* Semi-transparent */
+    z-index: 1000;  /* Stay above canvas and rulers */
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    gap: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s ease;
+	backdrop-filter: blur(4px);         /* Modern frosted glass effect */
+
+    pointer-events: auto; /* Ensure clicks work */
+	/* Ensure dropdowns can "fall out" of the ribbon */
+    overflow: visible !important; 
+
+    transition: transform 0.3s ease;
+    transform: translateY(0);
+}
+
+.display-ribbon.collapsed {
+    transform: translateY(-100%); /* Slide up out of view */
+	pointer-events: none;
+}
+
+.ribbon-group { display: flex; align-items: center; gap: 10px; }
+.ribbon-divider { width: 1px; height: 20px; background: #444; }
+
+.ribbon-group label { cursor: pointer; display: flex; align-items: center; gap: 5px; }
+.ribbon-group select, .ribbon-group input[type="range"] { 
+    background: #111; color: #00ff00; border: 1px solid #555; border-radius: 3px;
+}
+
+#showRibbonBtn {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 60px;
+    height: 25px;
+    transform: translateX(-50%);
+    z-index: 2000;       /* Keep it on top of everything else */
+    background: #007acc;
+	color: white;
+    border: 1px solid #444;
+    border-top: none;
+    padding: 2px 20px;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+    cursor: pointer;
+	display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+
+}
+
+.hidden { display: none !important; }

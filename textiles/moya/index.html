@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoYa - Mosaic Yarncraft Chart Creator</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="sidebar.css">
+    <link rel="stylesheet" href="ribbon.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<div class="main-layout">
+
+    <div class="sidebar" id="sidebar">
+		<div class="sidebar-header">
+		        <button id="aboutBtn" title="About this App" style="width: auto; background: #444;">ⓘ</button>
+				<button id="toggleFullscreen" title="Enter Fullscreen" style="width: auto; background: #444;">⛶</button>
+				<button id="toggleSidebar" title="Collapse Sidebar" style="width: auto; background: #444;">◀</button>
+
+		</div>
+		<div class="sidebar-section">
+            <h2>Information</h2>
+            <div id="status" class="status-box">Waiting for image...</div>
+        </div>
+
+		<div class="sidebar-section collapsed">
+		<!-- Clickable Header -->
+			<h2 class="section-toggle">Chart Size/Gauge <span class="arrow">▼</span></h2>
+
+			<!-- Collapsible Content -->
+			<div class="section-content collapsed">
+				<div class="control-group">
+					<label for="unitSelect">Unit:</label>
+					<select id="unitSelect">
+						<option value="px">Stitches/Rows</option>
+						<option value="in">Inches</option>
+					</select>
+				</div>
+
+				<div class="control-group">
+					<label for="targetDims">Width / Height:</label>
+					<div id="targetDims" style="display:flex; gap:5px;">
+						<input type="number" id="targetW" value="800" style="width:50%;">
+						<input type="number" id="targetH" value="600" style="width:50%;">
+					</div>
+					<a href="#" id="resetResizeLink" style="font-size: 0.7rem; color: #007acc; text-decoration: underline; margin-top: 5px; display: inline-block;">Reset to Original</a>
+				</div>
+
+				<div class="toggle-group">
+					<input type="checkbox" id="lockAspect" checked>
+					<label for="lockAspect">Lock Aspect Ratio of Image</label>
+				</div>
+
+				<!-- Gauge controls -->
+				<div id="gaugeControls" style="display:none;" class="control-group">
+					<label for="gauge">Gauge for 4x4 Inch Swatch (stitches/rows):</label>
+					<div id="gauge" style="display:flex; gap:5px;">
+						<input type="number" id="pp4h" value="20" style="width:50%;">
+						<input type="number" id="pp4v" value="20" style="width:50%;">
+					</div>
+					<div id="gaugeDisplay" style="font-size: 0.75rem; color: #00ff00; margin-top: 5px;">
+						Per inch: 5 stitches x 5 rows
+					</div>
+				</div>
+
+				<!-- Action Buttons -->
+				<div class="button-stack">
+					<button id="btnNew" style="background-color: #f39c14; margin-top: 10px;">Create Blank Chart</button>
+					<button id="btnResizeAllLayers" style="background-color: #e38c12; margin-top: 10px;">Resize All Layers</button>
+					<button id="btnGauge" style="background-color: #d37c10; margin-top: 10px;">Change Gauge (Keep physical size)</button>
+					<button id="btnResizeChartToBG" style="background-color: #c36c0d; margin-top: 10px;">Match Chart Size to Reference</button>
+					<button id="btnResizeBGToChart" style="background-color: #b35c0b; margin-top: 10px;">Match Reference Size to Chart</button>
+					<button id="cropToSquareBtn" style="background-color: #d35400; margin-top: 10px;">Crop to Square (Centered)</button>
+				</div>
+			</div>
+		</div>
+
+        <div class="sidebar-section collapsed">
+            <h2 class="section-toggle">Load/Save <span class="arrow">▼</span></h2>
+			<div class="section-content">
+				<p style="font-size: 0.8rem; color: #aaa; margin-top: 15px;">
+					CHART / DRAWING LAYER
+				</p>
+
+				<input type="file" id="uploadFront" accept="image/*">
+
+				
+				<div style="display: flex; gap: 5px; margin-top: 10px;">
+					<button id="revertBtn" disabled>Revert to Original Image</button>
+					<button id="clearBtn" disabled>Clear</button>
+				</div>
+
+				
+				<div style="display: flex; gap: 5px; margin-top: 5px;">
+					<button id="downloadImgBtn" disabled style="background-color: #28a745; margin-top: 5px;">Save Raw Image (No Markings)</button>
+					<button id="downloadChartImgBtn" disabled style="background-color: #28a745; margin-top: 5px;">Save Chart As Image</button>
+					<button id="downloadChartPDFBtn" disabled style="background-color: #e74c3c; margin-top: 5px;">Save Chart As PDF</button>
+				</div>
+
+				<p style="font-size: 0.8rem; color: #aaa; margin-top: 15px;">
+					REFERENCE IMAGE
+				</p>
+
+				<input type="file" id="uploadBack" accept="image/*">
+
+<!--
+				<p style="font-size: 0.8rem; color: #aaa; margin-top: 15px;">
+					WORKSPACE
+				</p>
+
+				<div style="display: flex; gap: 5px; margin-top: 5px;">
+					<button id="exportWorkspaceBtn" style="background-color: #6f42c1; margin-top: 5px; font-size: 0.75rem;">Export to File</button>
+					<button id="importWorkspaceBtn" style="background-color: #007acc; margin-top: 5px; font-size: 0.75rem;">Import from File</button>
+				</div>
+-->
+    			<!-- Hidden input for importing -->
+<!--
+    			<input type="file" id="importWorkspaceInput" accept=".json" style="display:none;">
+-->
+			</div>
+        </div>
+
+        <div class="sidebar-section collapsed">
+            <h2 class="section-toggle">Image Processing + Drawing <span class="arrow">▼</span></h2>
+			<div class="section-content">
+				<div style="display: flex; gap: 5px;">
+					Generate Chart from Source Image
+				</div>
+				<div class="control-group">
+					<button id="thresholdBtn" style="flex: 1; background-color: #9c27b0; margin-top: 10px;">Threshold</button>
+					<label for="thresholdRange">Threshold value: <span id="threshVal">128</span></label>
+					<input type="range" id="thresholdRange" min="0" max="255" value="128" style="accent-color: #9c27b0;">
+				</div>
+				<div class="control-group">
+					<button id="ditherBtn" style="flex: 1; background-color: #9c27b0; margin-top: 10px;">Dither</button>
+					<label for="ditherStrength">Dither Strength: <span id="ditherVal">100</span>%</label>
+					<input type="range" id="ditherStrength" min="0" max="100" value="100" style="accent-color: #9c27b0;">
+				</div>
+				<div class="control-group">
+
+					<div class="toggle-group">
+						<input type="checkbox" id="serpentineScan" checked>
+						<label for="serpentineScan">Serpentine Scan (Boustrodephon)</label>
+					</div>
+					<!--   restore if/when ready to implement bottom-up dithering
+					<div class="toggle-group">
+						<input type="checkbox" id="ditherTopDown" checked>
+						<label for="ditherTopDown">TopDown</label>
+					</div>
+					--->
+					<div class="toggle-group">
+						<input type="checkbox" id="validateWhileDithering" checked>
+						<label for="validateWhileDithering">Validate while Dithering</label>
+					</div>
+				</div>
+				<div style="display: flex; gap: 5px;">
+					Chart Actions
+				</div>
+				<div class="control-group">
+					<button id="validateBtn" style="background-color: #f0ad4e; margin-top: 10px;">Validate Chart (V)</button>
+					<div class="toggle-group">
+						<input type="checkbox" id="firstRowA" checked>
+						<label for="firstRowA">First Row Color A</label>
+					</div>
+				</div>
+				<div class="control-group">
+					<button id="toggleInvalidBtn" style="background-color: #f0ad4e; margin-top: 10px;">Toggle All Invalid Stitches</button>
+					<button id="smartRepairBtn" style="background-color: #f0ad4e; margin-top: 10px;">Repair Invalid Stitches</button>
+				</div>
+
+				<div style="display: flex; gap: 5px;">
+					Drawing
+				</div>
+				<div class="control-group">
+					<div style="display: flex; gap: 5px;">
+						<p style="font-size: 0.8rem; color: #aaa; margin-top: 10px;">
+						Click stitches to toggle color <br>
+						Adjust brush size to affect multiple stitches
+					</p></div>
+					<label for="brushSize">Brush Size: <span id="brushVal">1</span>px</label>
+					<input type="range" id="brushSize" min="1" max="10" step="1" value="1">
+				</div>
+				<div class="control-group" style="display: flex; align-items: center; gap: 10px;">
+					<div style="flex: 1;">
+						<label for="symmetryMode">Symmetry:</label>
+						<select id="symmetryMode">
+							 <option value="none">Whole Image</option>
+							<option value="vertical">Mirror L/R</option>
+							<option value="horizontal">Mirror T/B</option>
+							<option value="4xMagic">Mirror Quadrants</option>
+							<option value="8xMagic">Mirror Octants</option>
+							<option value="4xITR">4x In-The-Round</option>
+							<option value="8xITR">8x In-The-Round </option>
+						</select>
+					</div>
+
+					<!-- Dynamic SVG Icon -->
+					<svg id="symmetryIcon" width="40" height="40" viewBox="0 0 40 40" style="background: #111; border: 1px solid #444; border-radius: 4px;">
+						<rect width="40" height="40" fill="none"/>
+						<line id="symV" x1="20" y1="0" x2="20" y2="40" stroke="#555" stroke-width="1"/>
+						<line id="symH" x1="0" y1="20" x2="40" y2="20" stroke="#555" stroke-width="1"/>
+						<line id="symD1" x1="0" y1="0" x2="40" y2="40" stroke="#555" stroke-width="1" style="display:none;"/>
+						<line id="symD2" x1="40" y1="0" x2="0" y2="40" stroke="#555" stroke-width="1" style="display:none;"/>
+					</svg>
+				</div>
+			</div>
+        </div>
+
+		<div class="sidebar-section collapsed">
+			<h2 class="section-toggle">Navigation & Tools <span class="arrow">▼</span></h2>
+			<div class="section-content">
+				<p style="font-size: 0.8rem; color: #aaa; margin-top: 10px;">
+					Scroll or (I)n and (O)ut to Zoom <br>
+					Space + Drag to Pan
+				</p>
+				<button id="resetView">Reset Zoom/Pan</button>
+			</div>
+        </div>
+
+		<div class="sidebar-section collapsed">
+			<h2 class="section-toggle">Display & Palette <span class="arrow">▼</span></h2>
+			<div class="section-content">
+				<label for="clearToColor">Clear Chart to...</label>
+				<div id="clearToColor" style="display: flex; gap: 5px; margin-top: 10px;">
+					<button id="clearTraceToABtn" style="background-color: #666; ">Palette A </button>
+					<button id="clearTraceToBBtn" style="background-color: #666; ">Palette B</button>
+				</div>
+				<div style="display: flex; gap: 15px; margin-top: 10px;">
+					<div style="display: flex;  gap: 5px; ">
+						Color A  <input type="color" id="colorAInput" value="#ffffff">
+					</div>
+					<div style="display: flex;  gap: 5px; ">
+						Color B  <input type="color" id="colorBInput" value="#000000">
+					</div>
+				</div>
+				<div style="display: flex; gap: 5px; margin-top: 10px;">
+					<button id="swapPaletteBtn" style="background-color: #444; font-size: 0.8rem; margin: 10px 0;">Swap Palette Colors</button>
+
+					<button id="resetPaletteBtn" style="background-color: #444; font-size: 0.8rem; margin: 10px 0;">Reset Palette to B&W</button>
+				</div>
+			</div>
+		</div>
+
+		<div class="section" style="border-bottom: none;">
+			<button id="factoryResetBtn" >Reset All Settings & Workspace</button>
+		</div>
+    </div>
+
+
+	<div class="editor-workspace" id="editorWorkspace">
+        <!-- Display Ribbon with 'hide' button-->
+        <div class="display-ribbon" id="displayRibbon">
+            <div class="ribbon-group">
+                <label><input type="checkbox" id="showGrid" checked> Grid</label>
+                <label><input type="checkbox" id="showSubGrid" > Stitch grid</label>
+            </div>
+            <div class="ribbon-divider"></div>
+            <div class="ribbon-group">
+                <label><input type="checkbox" id="showPixelRulers" checked> Stitch/Row Rulers</label>
+                <label><input type="checkbox" id="showPhysicalRulers" > Physical Size Rulers</label>
+            </div>
+            <div class="ribbon-divider"></div>
+            <div class="ribbon-group">
+                <label><input type="checkbox" id="usePhysicalAspect" >Non-square stitches</label>
+            </div>
+            <div class="ribbon-divider"></div>
+            <div class="ribbon-group">
+                <label><input type="checkbox" id="showErrors" > Invalid Stitches (V)</label>
+            </div>
+            <div class="ribbon-divider"></div>
+            <div class="ribbon-group">
+
+				<label for="markingsMode">Chart Markings</label>
+                <select id="markingsMode">
+                    <option value="none">None</option>
+                    <option value="up">Up (knit)</option>
+					<option value="down">Down (crochet)</option>
+                </select>
+
+			</div>
+
+            <div class="ribbon-divider"></div>
+            <div class="ribbon-group">
+				<label for="viewMode">View</label>
+                <select id="viewMode">
+                    <option value="palette">Chart</option>
+                    <option value="original">Source Image</option>
+					<option value="trace">Trace Mode (T)</option>
+                </select>
+				
+
+                <span id="traceControl" style="display:none;">
+					<label for="traceOpacity">Opq: <span id="traceOpacityVal">30</span></label>
+                    <input type="range" id="traceOpacity" min="0" max="100" value="30" style="width:60px;">
+                </span>
+			</div>
+			<div class="ribbon-divider"></div>
+			<button id="hideRibbonBtn" title="Hide Ribbon (H)" style="background:none; border:none; color:#888; cursor:pointer;">▲</button>
+		</div>
+
+		<div class="editor-container">
+			<canvas id="mainCanvas"></canvas>
+			<!-- Small floating buttons to show hidden controls again 
+				TODO/CBB - better hotkeys, for both -->
+			<button id="openSidebar" class="hidden" title="Show Sidebar">▶</button>
+			<button id="showRibbonBtn" class="hidden" title="Show Ribbon (H)">▼</button>
+		</div>
+	</div>
+</div>   <!-- end of "main-layout" -->
+
+
+
+	<!-- About Modal (Place this at the very bottom of body) -->
+	<div id="aboutModal" class="modal-overlay hidden">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2>About MoYa</h2>
+				<span id="closeAbout" class="modal-close">&times;</span>
+			</div>
+			<div class="modal-body">
+				<!-- Ball of Yarn Icon (Emoji or SVG) -->
+				<div style="font-size: 8rem; text-align: center; margin-bottom: 20px;">🧶</div>
+				<!-- Update these manually when releasing new versions -->
+				<p><strong>App Version:</strong> <span id="appVersion">1.0</span></p>
+				<p><strong>Version Release Date:</strong> <span id="appVersion">27 April 2026</span></p>
+				<!-- Last Saved is updated automatically -->
+				<p><strong>Workspace Last Saved:</strong> <span id="lastSavedTime">Never</span></p>
+				<p>MoYa ("Mosaic Yarncraft") is an application developed by Ari Rapkin Blenkhorn 
+					(<a href="mailto:ari@acm.org">ari@acm.org </a>) 
+					to aid yarn-crafters  
+					who want to design patterns which can be used for mosaic knitting/crochet/etc.
+					Mosaic crafting is worked in two contrasting colors of yarn, using only one color per row, alternating rows. 
+					A stitch which is the wrong color for a row is permitted only if the stitches above and below match it,
+					as it is worked by creating a long stitch which connects those two stitches.
+				    </p>
+				<p>
+					MoYa is a work in progress, under active development. Feedback is encouraged!
+				</p>
+				<b>Features:</b>
+				<ul>
+				<li>Set the size of your chart in stitches and rows, for a chart that can be used for any craft. 
+					Or set it in physical inches based on your personal row/stitch 
+					gauge in your chosen craft, and display with non-square stiches. Zoom and pan to see your chart easily.</li>
+				<li>To create your design, you can ... <br>
+					-- Click to toggle stitches. Work one stitch at a time, or use a larger square "brush". <br>
+					-- Create symmetric designs or mosaic-in-the-round by mirroring stitches from one drawing area to the rest of the image.<br>
+				    -- Import an existing bitmap as your chart, then modify it.<br>
+				    -- Import a background reference image, and draw over the reference image to create your chart.<br>
+					-- Turn a reference image into a chart in one step with automatic algorithms such as threshholding and dithering.</li>
+				<li>Check whether your chart is valid for mosaic yarn-crafting. Visual feedback updates as you modify the design.</li>
+				<li>Display your chart in black and white (the default) or set your palette to reflect the actual yarns being used.</li>
+				<li>Save your chart as a simple pixel map. Or add row and stitch numbers, long-stitch markers, and row-color indicators, and save as image or PDF.</li>
+				</ul>
+			</div>
+			<button id="closeAboutBtn" style="background-color: #007acc; margin-top: 20px;">Close</button>
+		</div>
+	</div>
+
+    <script src="mosaic.js"></script>
+	<script src="symmetry.js"></script>
+    <script src="validate.js"></script>
+    <script src="render.js"></script>
+    <script src="resize.js"></script>
+    <script src="about.js"></script>
+    <script src="imgProcessing.js"></script>
+	<script src="final.js"></script>
+
+</body>
+</html>
