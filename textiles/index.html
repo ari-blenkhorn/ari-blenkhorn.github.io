@@ -62,6 +62,33 @@
   li figure img { max-height: 280px; max-width: 100%; width: auto; height: auto; display: block; }
   li figure img.diagram { border: 2px solid var(--rule); box-sizing: border-box; }
   li figcaption { font-size: 0.9em; margin-top: 4px; color: #5a6270; }
+
+  /* Mosaic Yarncraft section (content from the UIST 2026 poster) */
+  .poster-note {
+    background: #fff;
+    border-left: 6px solid var(--accent);
+    padding: 8px 12px;
+  }
+  .banner { margin: 16px 0; }
+  .banner img { width: 100%; height: auto; display: block; }
+  .rule {
+    font-weight: bold;
+    border: 2px solid var(--rule);
+    padding: 8px 12px;
+    max-width: 70ch;
+  }
+  .features li { margin-bottom: 6px; }
+  .figrow {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px 24px;
+    margin: 16px 0;
+  }
+  .figrow figure { margin: 0; }
+  .figrow img { width: 100%; height: 220px; object-fit: contain; display: block; }
+  .figrow.wide { grid-template-columns: minmax(0, 640px); }
+  .figrow.wide img { height: auto; }
+  .figrow figcaption { font-size: 0.9em; margin-top: 4px; color: #5a6270; }
 </style>
 </head>
 
@@ -71,19 +98,84 @@
 <p class="byline"><a href="../">Ari Rapkin Blenkhorn</a></p>
 
 <h2>Mosaic Yarncraft</h2>
-<p>The mosaic colorwork technique for yarncrafts produces intricate multi-colored designs resembling 
-  tile mosaics. Unlike other colorwork methods, they require only one color of yarn per row. Mosaic 
-  charts can be used across multiple crafts such as knitting and crochet. Patterns must meet special 
-  stitch placement constraints. Few tools exist for creating compliant charts. Manual design is tedious and error-prone.
-</p>
-  
-<p>
-MoYa is a browser-based application to assist yarncrafters in creating mosaic patterns. It offers a 
-  combination of craft-aligned guided freehand drawing and image-based algorithms. Continuous chart 
-  validation provides immediate feedback for resolution of non-compliant designs. Chart markup adds 
-  craft- and user-specific fabrication details. 
-</p>
-  <p>Try MoYa <a href="moya/index.html">here</a>!</p>
+
+<p class="poster-note"><strong>Poster:</strong> <em>Craft-Aligned Pattern Design for Mosaic Yarncraft</em>,
+  presented at <a href="https://uist.org/2026">UIST 2026</a>.</p>
+
+<figure class="banner">
+  <img alt="The words &quot;mosaic yarncraft&quot; drawn as a black-and-white mosaic stitch chart in MoYa" src="moya_banner.png">
+</figure>
+
+<p>The mosaic colorwork technique for yarncrafts produces intricate multi-colored designs resembling
+  tile mosaics. Unlike most colorwork techniques, each row of a mosaic project is worked in a single
+  strand of yarn. The crafter does not need to carry unused strands across the back of the work or
+  manage numerous bobbins, so stitching progresses quickly and the back of the work shows tidy stripes.
+  Mosaic charts can be used across multiple crafts, such as knitting and crochet.</p>
+
+<p>With this simplicity comes a limit on the design space. Only two colors are used, and each row has a
+  designated color. A "wrong-color" stitch is made by extending and connecting the <i>anchor stitches</i>
+  above and below it, and the anchor stitches must be the correct color for their own rows. Therefore:</p>
+<p class="rule">Every vertical span of a color must begin and end on rows of that color, and must have an
+  odd number of stitches. Horizontal runs are unconstrained.</p>
+<p>Few tools exist for creating charts that meet these constraints, and designing them by hand is tedious
+  and error-prone.</p>
+
+<div class="figrow wide">
+  <figure>
+    <img alt="Close-up of black and white mosaic crochet, with white rows, black rows, and wrong-color stitches labeled" src="moya_technique.jpg">
+    <figcaption>One yarn per row. Wrong-color stitches are formed by connecting anchor stitches above and below.</figcaption>
+  </figure>
+</div>
+
+<h3>MoYa</h3>
+<p>MoYa ("Mosaic Yarncraft") is a browser-based application that helps yarncrafters create mosaic patterns.
+  It combines craft-aligned, guided freehand drawing with image-based algorithms. Continuous chart
+  validation gives immediate feedback so non-compliant designs can be fixed, and chart markup adds
+  craft- and crafter-specific fabrication details.</p>
+<ul class="features">
+  <li><b>Craft-aligned design:</b> configurable stitching direction, row-by-row or in-the-round
+    design, yarn palette, and stitch and row gauge.</li>
+  <li><b>Reference images:</b> trace over a photo or drawing, or convert it to a chart by dithering,
+    then hand-edit or auto-correct the result.</li>
+  <li><b>Immediate feedback:</b> stitches that break the mosaic rules are outlined in red and
+    updated after every edit.</li>
+  <li><b>Cross-craft output:</b> charts can be customized for a specific craft and crafter, or
+    exported in craft-agnostic formats.</li>
+</ul>
+
+<div class="figrow">
+  <figure>
+    <img alt="MoYa editor showing an in-the-round crochet chart divided into four diagonal quadrants" src="moya_in_the_round.png">
+    <figcaption>Designing an in-the-round crochet pattern in four diagonal quadrants.</figcaption>
+  </figure>
+  <figure>
+    <img alt="MoYa editor showing a dithered chart traced from a circular logo" src="moya_dither.jpg">
+    <figcaption>Creating a chart by dithering a reference image.</figcaption>
+  </figure>
+  <figure>
+    <img alt="MoYa editor showing an elephant chart with invalid stitches outlined in red" src="moya_constraints.png">
+    <figcaption>Stitches that violate mosaic constraints are outlined in red.</figcaption>
+  </figure>
+</div>
+
+<div class="figrow">
+  <figure>
+    <img alt="Finished black and white crocheted panel with a large mosaic bee and border bands" src="moya_bee.jpg">
+    <figcaption>From sketch to chart to yarncraft: a mosaic bee as part of a larger piece.</figcaption>
+  </figure>
+  <figure>
+    <img alt="Black and white Tunisian crochet mosaic swatch pinned flat" src="moya_crochet_sample.jpg">
+    <figcaption>One chart, two crafts: Tunisian crochet single-row front-post mosaic&hellip;</figcaption>
+  </figure>
+  <figure>
+    <img alt="Purple and white knitted mosaic swatch pinned flat, same motif as the crochet swatch" src="moya_knit_sample.jpg">
+    <figcaption>&hellip;and knitted double-row slip-stitch mosaic.</figcaption>
+  </figure>
+</div>
+
+<p>MoYa is written in JavaScript, HTML, and CSS. All data stays on the user's computer, and no AI is used
+  at runtime. (Generative AI assisted in writing MoYa.) It is ongoing work, and feedback is welcome.</p>
+<p><a href="moya/index.html">Try MoYa here!</a></p>
 
 <hr>
 
