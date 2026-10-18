@@ -53,6 +53,12 @@
   li figure { margin: 8px 0 4px; }
   li .photos { display: flex; flex-wrap: wrap; gap: 0 24px; }
   li .desc { margin: 6px 0 8px; max-width: 70ch; }
+
+  /* Project Linus blankets: a wrapping row of photos */
+  .gallery { display: flex; flex-wrap: wrap; gap: 16px 24px; }
+  .gallery figure { margin: 0; }
+  .gallery img { max-height: 280px; max-width: 100%; width: auto; height: auto; display: block; }
+  .gallery figcaption { font-size: 0.9em; margin-top: 4px; color: #5a6270; }
   li figure img { max-height: 280px; max-width: 100%; width: auto; height: auto; display: block; }
   li figure img.diagram { border: 2px solid var(--rule); box-sizing: border-box; }
   li figcaption { font-size: 0.9em; margin-top: 4px; color: #5a6270; }
@@ -150,7 +156,27 @@ MoYa is a browser-based application to assist yarncrafters in creating mosaic pa
   <a href="https://www.projectlinus.org">    
     Project Linus</a> provides handmade blankets to children 0-18 in the United States who are seriously ill, traumatized, or otherwise in need. 
 I am the webmaster for the <a href="https://linusannapolis.com">
-  Annapolis, Maryland chapter</a>. 
+  Annapolis, Maryland chapter</a>.
+
+<p>Some of the blankets I've made for Project Linus:</p>
+<div class="gallery">
+  <figure>
+    <img alt="Knitted garter-stitch blanket in diagonal stripes of many scrap yarn colors" src="linus_garter_scrap.jpg">
+    <figcaption>C2C garter scrap blanket (knit)</figcaption>
+  </figure>
+  <figure>
+    <img alt="Rectangular granny-stitch blanket in rainbow rounds with a black border" src="linus_round_robin.jpg">
+    <figcaption>Round robin granny blanket (crochet)</figcaption>
+  </figure>
+  <figure>
+    <img alt="Folded crocheted blanket in blue and green stripes with a cable along the edge" src="linus_cabled.jpg">
+    <figcaption>Blue and green cabled blanket (crochet)</figcaption>
+  </figure>
+  <figure>
+    <img alt="Blanket of pastel Tunisian honeycomb blocks with a blue border" src="linus_pastel_blocks_tunisian.jpg">
+    <figcaption>Pastel Tunisian honeycomb blanket (Tunisian crochet)</figcaption>
+  </figure>
+</div> 
 
 </body>
 </html>
