@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="An interactive, browser-based atmospheric glory renderer based on 
+          Dr. Ari Blenkhorn's spectral rendering research ."
+    />
+    <title>Atmospheric Glories</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Manrope:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="experience">
+      <canvas id="glory-canvas" aria-label="Interactive atmospheric glory simulation"></canvas>
+
+      <div class="grain" aria-hidden="true"></div>
+
+      <header class="topbar">
+        <a class="brand" href="https://ari-blenkhorn.github.io" aria-label="Ari Blenkhorn home">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>ARI RAPKIN BLENKHORN</span>
+        </a>
+        <div class="topbar-meta">
+          <!-- <span>About this project</span> -->
+          <button class="icon-button" id="info-button" type="button" aria-label="About this project">
+            <span>i</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="intro" aria-labelledby="page-title">
+        <p class="eyebrow">Light and clouds creating beauty</p>
+        <h1 id="page-title">ATMOSPHERIC GLORIES</h1>
+        <p class="lede">
+          Explore the luminous rings formed when sunlight is backscattered by a field of
+          near-uniform cloud droplets.
+        </p>
+          <!--
+        <button class="explore-button" id="explore-button" type="button">
+          <span>ENTER THE PHENOMENON</span>
+          <span class="arrow">↘</span>
+        </button>
+          -->
+      </section>
+
+      <aside class="control-panel" aria-label="Glory rendering controls">
+        <div class="panel-header">
+          <div>
+            <p class="panel-kicker">SIMULATION</p>
+            <h2>Cloud field</h2>
+          </div>
+            <!--
+          <div class="live-indicator"><span></span> LIVE</div> -->
+        </div>
+
+        <div class="preset-row" role="group" aria-label="Cloud presets">
+          <button class="preset active" type="button" data-preset="alpine">ALPINE</button>
+          <button class="preset" type="button" data-preset="marine">MARINE</button>
+          <button class="preset" type="button" data-preset="veil">THIN VEIL</button>
+        </div>
+
+        <div class="controls">
+          <label class="control">
+            <span class="control-name">DROPLET RADIUS</span>
+            <span class="control-value"><output id="radius-output">10.0</output> μm</span>
+            <input id="radius" type="range" min="4" max="22" step="0.1" value="10" />
+            <span class="range-labels"><span>4</span><span>22</span></span>
+          </label>
+
+          <label class="control">
+            <span class="control-name">SIZE VARIANCE</span>
+            <span class="control-value"><output id="variance-output">3.0</output>%</span>
+            <input
+              id="variance"
+              type="range"
+              min="0"
+              max="20"
+              step="0.5"
+              value="3"
+              aria-describedby="variance-behavior"
+            />
+            <span class="range-labels"><span>UNIFORM</span><span>DISPERSED</span></span>
+            <span class="control-hint" id="variance-behavior">A Gaussian radius distribution averages the spectral rings toward white.</span>
+          </label>
+
+          <label class="control">
+            <span class="control-name">CLOUD DENSITY</span>
+            <span class="control-value"><output id="density-output">72</output>%</span>
+            <input id="density" type="range" min="25" max="100" step="1" value="72" />
+            <span class="range-labels"><span>THIN</span><span>DENSE</span></span>
+          </label>
+
+          <label class="control">
+            <span class="control-name">SOLAR ELEVATION</span>
+            <span class="control-value"><output id="elevation-output">34</output>°</span>
+            <input id="elevation" type="range" min="5" max="80" step="1" value="34" />
+            <span class="range-labels"><span>HORIZON</span><span>ZENITH</span></span>
+          </label>
+
+          <label class="control">
+            <span class="control-name">WAVELENGTH SAMPLES</span>
+            <span class="control-value"><output id="wavelengths-output">9</output> λ</span>
+            <input
+              id="wavelengths"
+              type="range"
+              min="3"
+              max="100"
+              step="1"
+              value="9"
+              aria-describedby="wavelengths-behavior"
+            />
+            <span class="range-labels"><span>FAST</span><span>REFERENCE</span></span>
+            <span class="control-hint" id="wavelengths-behavior">More samples reduce spectral banding but require substantially more GPU work.</span>
+          </label>
+        </div>
+
+        <div class="readout">
+          <div>
+            <span>PRIMARY RING</span>
+            <strong id="ring-output">2.1°</strong>
+          </div>
+          <div>
+            <span>RING COHERENCE</span>
+            <strong id="coherence-output">HIGH</strong>
+          </div>
+        </div>
+      </aside>
+
+        <!--
+      <div class="coordinates" aria-hidden="true">
+        <span>53.420° N</span>
+        <span>6.270° W</span>
+      </div>
+
+      <div class="scroll-mark" aria-hidden="true">
+        <span>SCROLL TO OBSERVE</span>
+        <span class="scroll-line"></span>
+      </div>
+
+            -->
+
+      <section class="science-card" id="science-card" aria-hidden="true">
+        <button class="close-button" id="close-info" type="button" aria-label="Close information">×</button>
+        <p class="eyebrow">ABOUT THIS PROJECT</p>
+        <h2>A rainbow's smaller cousin</h2>
+        <p>
+          A glory forms around the antisolar point when tiny, similarly-sized water droplets
+          send light almost directly back toward the observer. Each wavelength returns at a
+          slightly different angle, producing nested spectral rings.
+        </p>
+          <!--
+        <div class="formula">
+          <span>RING SCALE</span>
+          <strong>θ ∝ λ / r</strong>
+        </div>
+              -->
+        <p> <!-- class="citation-note"> -->
+          This browser study is based on my dissertation research 
+            on real-time, GPU-accelerated spectral rendering of atmospheric glories. Motivated by 
+            my own real-world experience of skydiving through glories, my goal was
+            to achieve sufficient fidelity and rendering speed to support a virtual-reality
+            simulation of that activity.
+        </p>
+        <p>
+            No AI is used to render the glories. Generative AI assisted in creating this web version
+            from the original desktop application, which used OpenGL compute shaders.
+        </p>
+      </section>
+
+      <div class="unsupported" id="unsupported" hidden>
+        WebGL is unavailable. Try opening this page in a current browser.
+      </div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
