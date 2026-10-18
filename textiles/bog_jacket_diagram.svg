@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-labelledby="t d">
+  <title id="t">Two-color Bog Jacket diagram</title>
+  <desc id="d">A Bog Jacket laid flat. The body and the undersides of the sleeves are dark; a light band covers the shoulders and the tops of the sleeves.</desc>
+
+  <!-- Body and lower sleeves (dark) -->
+  <path d="M30 40 L170 40 Q200 62 230 40 L370 40 L370 140 L270 140 L270 280 L130 280 L130 140 L30 140 Z"
+        fill="#3d4f63"/>
+
+  <!-- Shoulders and sleeve tops (light) -->
+  <path d="M30 40 L170 40 Q200 62 230 40 L370 40 L370 95 L270 95 L270 120 L130 120 L130 95 L30 95 Z"
+        fill="#e4dccb"/>
+
+  <!-- Outline -->
+  <path d="M30 40 L170 40 Q200 62 230 40 L370 40 L370 140 L270 140 L270 280 L130 280 L130 140 L30 140 Z"
+        fill="none" stroke="#1f2a36" stroke-width="2.5" stroke-linejoin="round"/>
+
+  <!-- Center front opening -->
+  <line x1="200" y1="51" x2="200" y2="280" stroke="#1f2a36" stroke-width="2.5"/>
+
+  <!-- Labels -->
+  <g font-family="Georgia, 'Times New Roman', serif" font-size="15" text-anchor="middle">
+    <text x="200" y="22" fill="#1f2a36">shoulders &amp; sleeve tops</text>
+    <line x1="200" y1="27" x2="200" y2="40" stroke="#1f2a36" stroke-width="1"/>
+    <text x="165" y="215" fill="#ffffff">body</text>
+    <text x="235" y="215" fill="#ffffff">body</text>
+  </g>
+</svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-labelledby="t">
+  <title id="t">Photo coming soon</title>
+  <rect x="1" y="1" width="398" height="298" fill="#e3e9ef" stroke="#b9cdd3" stroke-width="2" stroke-dasharray="10 6"/>
+  <!-- Half hexagon, full hexagon, half hexagon: the Petals layout -->
+  <g fill="none" stroke="#1f3a5f" stroke-width="2.5" stroke-linejoin="round">
+    <polygon points="200,60 252,90 252,150 200,180 148,150 148,90"/>
+    <polygon points="120,60 68,90 68,150 120,180"/>
+    <polygon points="280,60 332,90 332,150 280,180"/>
+  </g>
+  <text x="200" y="230" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="20" fill="#1f3a5f">Photo coming soon</text>
+</svg>
