@@ -1,17 +1,59 @@
-
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title> Textiles - Ari Rapkin Blenkhorn </title>
+<style>
+  /* Same palette and page width as the home page */
+  :root {
+    --bg: #eef2f6;
+    --text: #222831;
+    --heading: #1f3a5f;
+    --accent: #0b6e80;
+    --link: #2a5599;
+    --visited: #5b4a8a;
+    --rule: #b9cdd3;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 16px 32px;
+    line-height: 1.45;
+  }
+  a { color: var(--link); }
+  a:visited { color: var(--visited); }
+  a:hover { color: var(--heading); }
+  h1 {
+    text-align: center;
+    color: var(--heading);
+    margin-bottom: 4px;
+  }
+  .byline {
+    text-align: center;
+    font-size: 1.25em;
+    font-weight: bold;
+    margin: 0;
+    padding-bottom: 8px;
+    border-bottom: 4px solid var(--accent);
+  }
+  .byline a, .byline a:visited { color: var(--heading); text-decoration: none; }
+  .byline a:hover { text-decoration: underline; }
+  h2 {
+    color: var(--heading);
+    border-left: 6px solid var(--accent);
+    padding-left: 10px;
+  }
+  hr { border: 0; border-top: 2px solid var(--rule); margin: 24px 0; }
+</style>
 </head>
 
-<body bgcolor="#eeeeee">
+<body>
 
-<center> 
-  <h1> Computational and Hand-Crafted Textiles</h1>
-  <h2>Ari Rapkin Blenkhorn </h2> 
-</center>
-
-<hr>
+<h1> Computational and Hand-Crafted Textiles</h1>
+<p class="byline"><a href="../">Ari Rapkin Blenkhorn</a></p>
 
 <h2>Mosaic Yarncraft</h2>
 <p>The mosaic colorwork technique for yarncrafts produces intricate multi-colored designs resembling 
