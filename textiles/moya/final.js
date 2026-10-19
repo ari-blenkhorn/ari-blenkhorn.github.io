@@ -1,31 +1,32 @@
 /** Final Initialization on Page Load **/
 window.addEventListener('load', () => {
-    // 1. Check if a workspace already exists in LocalStorage
-    const saved = localStorage.getItem('imgEditorWorkspace');
-    
-    if (saved) {
-        // If a save exists, the existing load logic will handle it
-        console.log("Restoring workspace from storage...");
-    } else {
-        // 2. If NO save exists, initialize a clean "Default" workspace
-        console.log("Initializing fresh workspace...");
-        
-        // starting size (defined in mosaic.js)
-        drawCanvas.width = DEFAULTS.newW;
-        drawCanvas.height = DEFAULTS.newH;
-        bgCanvas.width = DEFAULTS.newW;
-        bgCanvas.height = DEFAULTS.newW;
-        displayCanvas.width = DEFAULTS.newW;
-        displayCanvas.height = DEFAULTS.newW;
+    // Always start with a clean "Default" workspace. Restoring a saved
+    // workspace from LocalStorage is disabled (see the commented-out
+    // Workspace code in mosaic.js), so an old 'imgEditorWorkspace' entry
+    // must not stop the default chart from being created.
+    console.log("Initializing fresh workspace...");
 
-        // Fill with your "Clean Slate" white
-        drawCtx.fillStyle = "#FFFFFF";
-        drawCtx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
+    // starting size (defined in mosaic.js)
+    drawCanvas.width = DEFAULTS.newW;
+    drawCanvas.height = DEFAULTS.newH;
+    bgCanvas.width = DEFAULTS.newW;
+    bgCanvas.height = DEFAULTS.newH;
+    displayCanvas.width = DEFAULTS.newW;
+    displayCanvas.height = DEFAULTS.newH;
 
-        // 3. Force the view to fit the browser window immediately
-        resetView();
-        
-        // 4. Initial Render
-        render();
-    }
+    // Fill with your "Clean Slate" white
+    drawCtx.fillStyle = "#FFFFFF";
+    drawCtx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
+    originalSize = { w: drawCanvas.width, h: drawCanvas.height };
+
+    // Record the starting gauge, so Change Gauge has a reference,
+    // and show the starting chart size in the width/height fields
+    updateGaugeReference();
+    updateResizeInputs();
+
+    // Force the view to fit the browser window immediately
+    resetView();
+
+    // Initial Render
+    render();
 });

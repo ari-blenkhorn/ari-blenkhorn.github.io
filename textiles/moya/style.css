@@ -98,7 +98,19 @@ canvas:fullscreen {
     max-width: 90%;
     border: 1px solid #444;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+
+    /* Fit on screen: header and Close button stay put, the body scrolls */
+    box-sizing: border-box;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    color-scheme: dark; /* dark scroll bar to match */
 }
+
+/* Header and Close button keep their size; Close stays its natural width */
+.modal-content > .modal-header,
+.modal-content > button { flex-shrink: 0; }
+.modal-content > button { align-self: flex-start; }
 
 .modal-header {
     display: flex;
@@ -115,6 +127,17 @@ canvas:fullscreen {
 }
 .modal-close:hover { color: white; }
 
-.modal-body { line-height: 1.6; color: #ccc; }
+.modal-body {
+    line-height: 1.6;
+    color: #ccc;
+    overflow-y: auto;
+    min-height: 0;     /* lets the body shrink and scroll inside the flex box */
+    padding-right: 8px; /* keep text clear of the scroll bar */
+}
+
+/* Links readable on the dark modal background */
+.modal-body a,
+.modal-body a:visited { color: #6cb6ff; }
+.modal-body a:hover { color: #a8d4ff; }
 
 .hidden { display: none !important; }

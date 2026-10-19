@@ -56,6 +56,9 @@ let lastMouse = { x: 0, y: 0 }; // Track position for delta panning
 let spacePressed = false;
 let img = null; 
 let originalImg = null; // to store the clean Image object, for reverting
+// Size (stitches x rows) when the chart was created or an image was loaded.
+// Unlike originalImg, resizing doesn't change it ("Reset to Original").
+let originalSize = null;
 let activePixel = null;  // Stores {raw (x,y), display (x,y), rgba}
 let validationOutput = []; // Array of {x, y} coordinates that failed or have markings
 let mouseImagePos = { x: null, y: null };
@@ -157,6 +160,7 @@ function createNewImage(w, h) {
     tempImg.onload = () => {
         img = tempImg;
         originalImg = tempImg;
+        originalSize = { w, h };
 
         // 4. Reset States
         activePixel = null;
@@ -194,6 +198,7 @@ function clearWorkspace() {
     // 1. Reset Global State
     img = null;
     originalImg = null;
+    originalSize = null;
     activePixel = null;
     validationOutput = [];
     isDirty = false;
@@ -325,6 +330,7 @@ function handleFile(file, targetLayer = 'drawing') {
 			}
 			*/
 
+            originalSize = { w: tempImg.width, h: tempImg.height };
             activePixel = null;
             validationOutput = [];
 			validationStats = null;
@@ -461,14 +467,14 @@ canvas.addEventListener('wheel', (e) => {
 function zoomFromCenter(factor)
 {
 	// Zoom from the center of the canvas viewport
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
+    const centerX = canvas.clientWidth / 2;  // CSS pixels, like viewState
+    const centerY = canvas.clientHeight / 2;
     
     const worldX = (centerX - viewState.x) / viewState.scale;
     const worldY = (centerY - viewState.y) / viewState.scale;
 
     const newScale = viewState.scale * factor;
-    if (newScale > 0.01 && newScale < 100) {
+    if (newScale > MIN_SCALE && newScale < MAX_SCALE) {
         viewState.scale = newScale;
         viewState.x = centerX - worldX * viewState.scale;
         viewState.y = centerY - worldY * viewState.scale;
@@ -486,8 +492,11 @@ canvas.addEventListener('mousedown', (e) => {
         isPanning = true;
         canvas.style.cursor = 'grabbing';
         lastMouse = { x: e.offsetX, y: e.offsetY };
-    } else {
-        handlePixelClick(e);
+    } else if (e.button === 0) {
+        // Start a possible stroke. If the mouse is released without
+        // leaving this stitch, it's a click (toggle); see finishStroke()
+        const p = eventStitch(e);
+        if (stitchInChart(p)) stroke = { start: p, last: p, dragged: false };
     }
 });
 
@@ -507,21 +516,69 @@ window.addEventListener('mousemove', (e) => {
     render();
 });
 
-window.addEventListener('mouseup', () => { 
-    isPanning = false; 
+window.addEventListener('mouseup', () => {
+    isPanning = false;
     canvas.style.cursor = spacePressed ? 'grab' : 'crosshair';
+    finishStroke();
 });
 
 
 /** 3. PIXEL LOGIC **/
 
+// Click-and-drag drawing. A press that is released on the same stitch
+// toggles it; moving to another stitch while pressed draws in the
+// foreground color (Color B) along the path, using the brush.
+let stroke = null; // { start, last, dragged } in stitch coordinates
 
-function handlePixelClick(e) {
+// Stitch under the mouse. Columns are drawn stretched by the
+// non-square-stitch aspect correction.
+function eventStitch(e) {
+    return {
+        x: Math.floor((e.offsetX - viewState.x) / (viewState.scale * aspectCorrectionX())),
+        y: Math.floor((e.offsetY - viewState.y) / viewState.scale),
+    };
+}
+
+function stitchInChart(p) {
+    return p.x >= 0 && p.x < drawCanvas.width && p.y >= 0 && p.y < drawCanvas.height;
+}
+
+// Extend the stroke to stitch p, painting every stitch along the way
+// (Bresenham line) so fast mouse moves don't leave gaps
+function continueStroke(p) {
+    if (!stroke || (p.x === stroke.last.x && p.y === stroke.last.y)) return;
+
+    if (!stroke.dragged) {
+        stroke.dragged = true;
+        paintBrushAt(stroke.start.x, stroke.start.y, FOREGROUND_VALUE);
+    }
+
+    let { x, y } = stroke.last;
+    const dx = Math.abs(p.x - x), sx = x < p.x ? 1 : -1;
+    const dy = -Math.abs(p.y - y), sy = y < p.y ? 1 : -1;
+    let err = dx + dy;
+    while (x !== p.x || y !== p.y) {
+        const e2 = 2 * err;
+        if (e2 >= dy) { err += dy; x += sx; }
+        if (e2 <= dx) { err += dx; y += sy; }
+        paintBrushAt(x, y, FOREGROUND_VALUE);
+    }
+    stroke.last = p;
+    render();
+}
+
+function finishStroke() {
+    if (!stroke) return;
+    const s = stroke;
+    stroke = null;
+    if (s.dragged) finishPixelEdit();  // validate once, at the end of the stroke
+    else handlePixelClick(s.start);
+}
+
+function handlePixelClick({ x: rawX, y: rawY }) {
      if (!drawCanvas.width) return;
-    const rawX = Math.floor((e.offsetX - viewState.x) / viewState.scale);
-    const rawY = Math.floor((e.offsetY - viewState.y) / viewState.scale);
 
-    if (rawX >= 0 && rawX < drawCanvas.width && rawY >= 0 && rawY < drawCanvas.height) {
+    if (stitchInChart({ x: rawX, y: rawY })) {
         const p = drawCtx.getImageData(rawX, rawY, 1, 1).data;
         
         // Update global state
@@ -543,10 +600,14 @@ canvas.addEventListener('mousemove', (e) => {
     if (!drawCanvas.width) return;
 
     // Map screen mouse position to image coordinates
-    const rx = Math.floor((e.offsetX - viewState.x) / viewState.scale);
-    const ry = Math.floor((e.offsetY - viewState.y) / viewState.scale);
+    mouseImagePos = eventStitch(e);
 
-    mouseImagePos = { x: rx, y: ry };
+    // Drawing a stroke? (If the button was released outside the window,
+    // we never got the mouseup; end the stroke now.)
+    if (stroke) {
+        if (e.buttons & 1) { continueStroke(mouseImagePos); return; }
+        finishStroke();
+    }
 
     // Only re-render if we aren't already panning (panning handles its own render)
     if (!isPanning) render();
@@ -563,7 +624,32 @@ brushSlider.addEventListener('input', () => {
     brushValDisplay.innerText = brushSlider.value;
 });
 
+// Drawing layer values: white (255) shows as Color A (background, what new
+// charts are filled with); black (0) shows as Color B (foreground).
+const FOREGROUND_VALUE = 0;
+
+// Click: toggle the stitch under the brush center, and paint the whole
+// brush area (with symmetry) in the opposite color
 function togglePixelCommand(x, y) {
+    // 1. Determine the target color based on the current state
+	// of the center brush pixel (click location)
+    const centerPixel = drawCtx.getImageData(x, y, 1, 1).data;
+    const centerLuminance = (centerPixel[0] * 0.299 + centerPixel[1] * 0.587 + centerPixel[2] * 0.114);
+    const targetValue = centerLuminance >= 128 ? 0 : 255;
+
+    paintBrushAt(x, y, targetValue);
+
+    // Update activePixel global for UI consistency
+    if (activePixel) {
+        activePixel.r = activePixel.g = activePixel.b = targetValue;
+    }
+
+    finishPixelEdit();
+}
+
+// Paint the brush area centered on (x, y), with symmetry, in targetValue
+// (0 or 255). Doesn't validate; call finishPixelEdit() when done.
+function paintBrushAt(x, y, targetValue) {
     const symMode = symSelect.value;
     const w = drawCanvas.width;
     const h = drawCanvas.height;
@@ -577,24 +663,17 @@ function togglePixelCommand(x, y) {
         drawCtx.fillRect(px, py, 1, 1);
     };
 
-	const size = parseInt(brushSlider.value);
-    const radius = Math.floor(size / 2);
-
-    // 1. Determine the target color based on the current state
-	// of the center brush pixel (click location)
-    const centerPixel = drawCtx.getImageData(x, y, 1, 1).data;
-    const centerLuminance = (centerPixel[0] * 0.299 + centerPixel[1] * 0.587 + centerPixel[2] * 0.114);
-    const targetValue = centerLuminance >= 128 ? 0 : 255;
-
-    // 2. Loop through the brush area
-    for (let i = -radius; i <= radius; i++) {
-        for (let j = -radius; j <= radius; j++) {
+    // Loop through the brush area (same footprint as the brush preview)
+    const { lo, hi } = brushSpan();
+    for (let i = lo; i <= hi; i++) {
+        for (let j = lo; j <= hi; j++) {
 			// Target coords
             const tx = x + i;
             const ty = y + j;
 
-			if (! pixelInActiveDrawingArea( tx, ty, h, w) )
-                return;
+			// Skip brush stitches outside the active symmetry region
+			if (! pixelInActiveDrawingArea(tx, ty, w, h) )
+                continue;
 
             if (symMode === 'none'){
                 paint(tx, ty);
@@ -646,31 +725,18 @@ function togglePixelCommand(x, y) {
             }
         }
     }
+}
 
-    // 3. Update activePixel global for UI consistency
-    if (activePixel) {
-        activePixel.r = activePixel.g = activePixel.b = targetValue;
-    }
-
-    // 4. We've made changes, so mark as dirty to enable Revert
+// After a click or a drawn stroke: mark the chart edited and re-validate
+function finishPixelEdit() {
+    // We've made changes, so mark as dirty to enable Revert
     // TODO/CBB - what if we toggled a stitch, then toggled it back? No net change.
     setDirty(true);
     setDownloadsAllowed(true);
 
-	// If we have existing stats, perform a live update
-    if (validationStats) {
-        performLiveValidation(x - radius, size);
-    } else {
-        // If no stats exist, just mark dirty as usual
-        vStatsDirty = true;
-	}
-
-    // 5. AUTO-VALIDATE: Trigger the existing validation logic to refresh red boxes & anchor X's
+    // AUTO-VALIDATE: Trigger the existing validation logic to refresh red boxes & anchor X's
     // We manually trigger the click event on the validate button
-
     validateBtn.click();
-
-    //console.log(`Stitch at ${x}, ${y} inverted to ${targetValue === 255 ? 'White' : 'Black'}.`);
 	render();
 }
 
@@ -715,8 +781,7 @@ downloadImgBtn.addEventListener('click', () => {
     if (!drawCanvas.width) return;
 	
 	const usePhysical = document.getElementById('usePhysicalAspect').checked;
-    const pph = (parseFloat(document.getElementById('pp4h').value) || 1200) / 4;
-    const ppv = (parseFloat(document.getElementById('pp4v').value) || 1200) / 4;
+    const { pph, ppv } = appliedGauge();
 
     let exportCanvas = drawCanvas;
 
@@ -763,7 +828,7 @@ downloadChartImgBtn.addEventListener('click', () => {
 downloadChartPDFBtn.addEventListener('click', () => {
 	if (!drawCanvas.width) return;
 	
-    if (validationStats.invalid > 0)
+    if (validationStats && validationStats.invalid > 0)
     {
         if (! confirm("The chart has invalid pixels. Continue to export?")) 
             return;
@@ -772,23 +837,36 @@ downloadChartPDFBtn.addEventListener('click', () => {
     const { jsPDF } = window.jspdf;
 	
 	// Handle non-square stitch gauge
-	const pph = (parseFloat(document.getElementById('pp4h').value) || 1200) / 4;
-	const ppv = (parseFloat(document.getElementById('pp4v').value) || 1200) / 4;
-	const aspectCorrX = ppv / pph;
+	const aspectCorrX = gaugeAspectX();
 
 	// 1. Create a hidden temporary canvas at higher DPI
-	const exportScale = 6 * viewState.scale;  //  THAT WAS THE KEY TO UNBLURRED X's
 	const imgW = drawCanvas.width;
 	const imgH = drawCanvas.height;
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d', { willReadFrequently: true });
 
-    // Set dimensions to include the image PLUS the ruler margins
-    const margin = 15 * exportScale; // Extra space for ruler labels
+    // Margins (in screen pixels) for what's drawn outside the chart:
+    // physical-size rulers on the left and top, the row-color markers
+    // (one row tall, so vs wide) and row numbers on the right, and the
+    // column numbers below. See drawRulers / drawPhysicalSizeRulers.
+    const vs = viewState.scale;
+    const physical = physicalRulersToggle.checked;
+    const marginL = physical ? 70 : 25;   // a column number can be centered on the left edge
+    const marginT = physical ? 45 : 10;
+    const marginR = vs + 50;
+    const marginB = 40;
 
-	// Canvas is now larger than the source image by exportScale
-    tempCanvas.width = (imgW * exportScale) + margin;
-    tempCanvas.height = (imgH * exportScale) + margin;
+    // Export at 6 device pixels per screen pixel (THAT WAS THE KEY TO
+    // UNBLURRED X's), reduced if the canvas would exceed browser limits
+    const screenW = imgW * vs * aspectCorrX + marginL + marginR;
+    const screenH = imgH * vs + marginT + marginB;
+    const MAX_SIDE = 16000, MAX_AREA = 100e6;
+    const k = Math.min(6, MAX_SIDE / screenW, MAX_SIDE / screenH, Math.sqrt(MAX_AREA / (screenW * screenH)));
+    const exportScale = k * vs;
+
+	// Canvas holds the stretched chart plus all margins
+    tempCanvas.width = Math.ceil(screenW * k);
+    tempCanvas.height = Math.ceil(screenH * k);
 
 	//console.log(`PDF export: drawCanvas dims ${imgW} x ${imgH}, tempCanvas dims ${tempCanvas.width} x ${tempCanvas.height}`);
 
@@ -800,7 +878,7 @@ downloadChartPDFBtn.addEventListener('click', () => {
 
     // Shift the drawing area so rulers fit in the top/left  margins
 	tempCtx.save();
-	tempCtx.translate(margin/2.0, margin/2.0);
+	tempCtx.translate(marginL * k, marginT * k);
     tempCtx.scale(exportScale * aspectCorrX, exportScale);
 	//console.log(`PDF export: aspectCorrX ${aspectCorrX}, exportScale ${exportScale}`);
 
@@ -1081,9 +1159,8 @@ function updateStatusWindow() {
 	// show physical size AND pixels
 
 	if (unitSelect.value === 'in') {
-		// Calculate current gauge from the 4-inch inputs
-		const pph = parseFloat(document.getElementById('pp4h').value) / 4;
-		const ppv = parseFloat(document.getElementById('pp4v').value) / 4;
+		// Gauge applied to the chart
+		const { pph, ppv } = appliedGauge();
 
 		// Calculate Inches
 		const inchW = (w / pph).toFixed(2);

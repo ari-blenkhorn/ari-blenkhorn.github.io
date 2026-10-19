@@ -8,7 +8,38 @@ function setTargetDimensions(w,h,units)
 	document.getElementById('targetW').value = w;
 	document.getElementById('targetH').value = h;
 	unitSelect.value = units;
+	unitSelect.dataset.prevUnit = units;
 }
+
+// Current gauge in stitches and rows per inch
+function getGaugePerInch() {
+    const pph = (parseFloat(document.getElementById('pp4h').value) || 1200) / 4;
+    const ppv = (parseFloat(document.getElementById('pp4v').value) || 1200) / 4;
+    return { pph, ppv };
+}
+
+// Write values into the width/height fields, formatted for the unit
+function setSizeFields(w, h, unit) {
+    targetW.value = (unit === 'px') ? Math.round(w) : w.toFixed(2);
+    targetH.value = (unit === 'px') ? Math.round(h) : h.toFixed(2);
+}
+
+/** Convert the width/height fields when the unit dropdown changes **/
+unitSelect.dataset.prevUnit = unitSelect.value;
+unitSelect.addEventListener('change', () => {
+    const from = unitSelect.dataset.prevUnit;
+    const to = unitSelect.value;
+    unitSelect.dataset.prevUnit = to;
+    if (from === to) return;
+
+    const w = parseFloat(targetW.value);
+    const h = parseFloat(targetH.value);
+    if (isNaN(w) || isNaN(h)) return;
+
+    const { pph, ppv } = getGaugePerInch();
+    if (to === 'px') setSizeFields(w * pph, h * ppv, to);  // inches -> stitches/rows
+    else setSizeFields(w / pph, h / ppv, to);              // stitches/rows -> inches
+});
 
 /** Get desired pixel row/col tallies, regardless of how they were specified **/
 function getTargetDimensions() {
@@ -65,11 +96,12 @@ document.getElementById('btnGauge').addEventListener('click', () => {
     const targetW = Math.round(currentInchesW * pph);
     const targetH = Math.round(currentInchesH * ppv);
 
-    // 5. Execute the 3-layer resize
-    performResizeAll(targetW, targetH);
-
-    // 6. Sync the dataset so the next gauge change is relative to this one
+    // 5. Apply the new gauge (the display reads the applied gauge), then
+    // execute the 3-layer resize, passing the old aspect so the chart keeps
+    // its on-screen size. This also makes the next gauge change relative to this one.
+    const oldAspectX = aspectToggle.checked ? (oldPpv / oldPph) : 1;
     updateGaugeReference();
+    performResizeAll(targetW, targetH, oldAspectX);
 
 	// these might be redundant, as performResizeAll does them at the end
 	updateStatusWindow(); // Refresh the "Inches" readout in the sidebar
@@ -87,8 +119,12 @@ function resizeLayer (oldCanvas, width, height)
         temp.width = width;
         temp.height = height;
 
+        // drawImage throws on a 0x0 source (e.g. no background loaded),
+        // so an empty layer just becomes a blank canvas of the new size
+        if (!oldCanvas.width || !oldCanvas.height) return temp;
+
         tCtx.imageSmoothingEnabled = false;
-        tCtx.drawImage(oldCanvas,        //<<<<<<   PROBLEM
+        tCtx.drawImage(oldCanvas,
             0, 0, /* <<  source offsets */
             oldCanvas.width, oldCanvas.height,
             0, 0,  /* <<  dest offsets */
@@ -196,18 +232,27 @@ btnResizeBGToChart.addEventListener('click', () => {
 
 
 /** 2. Resize Logic **/
-function performResizeAll(newW, newH) {
+// oldAspectX: the aspect correction in effect before this change, when the
+// caller has already changed the gauge inputs (otherwise read from them).
+function performResizeAll(newW, newH, oldAspectX = aspectCorrectionX()) {
 
-	// Resize both core layers (Drawing and Background)
+	// Remember where the chart is on screen, so its apparent size stays the same
+	const screenBox = chartScreenBox(oldAspectX);
+
+	// Resize both core layers (Drawing and Background).
+	// An empty background (0x0, nothing loaded) stays empty.
+    const hasBg = bgCanvas.width > 0 && bgCanvas.height > 0;
     const resizedDraw = resizeLayer(drawCanvas, newW, newH);
-    const resizedBg = resizeLayer(bgCanvas, newW, newH);
 
     /* ------------ are these redundant given the two calls to resizeLayer ^^ */
 	// Update the Background Layer (bgCanvas)
-    bgCanvas.width = newW;
-    bgCanvas.height = newH;
-    bgCtx.imageSmoothingEnabled = false;
-    bgCtx.drawImage(resizedBg, 0, 0);
+    if (hasBg) {
+        const resizedBg = resizeLayer(bgCanvas, newW, newH);
+        bgCanvas.width = newW;
+        bgCanvas.height = newH;
+        bgCtx.imageSmoothingEnabled = false;
+        bgCtx.drawImage(resizedBg, 0, 0);
+    }
 
     // 4. Update the Drawing Layer (drawCanvas)
     drawCanvas.width = newW;
@@ -222,9 +267,13 @@ function performResizeAll(newW, newH) {
     displayCanvas.height = newH;
     // (updateDisplayBuffer() will handle the pixel mapping during render)
 
+    // Re-zoom now, so the very next frame already has the right size
+    keepApparentSize(screenBox);
+
     // 6. Update the global Image object for "Revert" baseline
-    // We use the background as the new originalImg baseline
-    const resizedDataUrl = bgCanvas.toDataURL();
+    // We use the background as the new originalImg baseline, or the chart
+    // if there is no background (a 0x0 canvas gives an image that never loads)
+    const resizedDataUrl = (hasBg ? bgCanvas : drawCanvas).toDataURL();
     const resizedImg = new Image();
 
 	resizedImg.onload = () => {
@@ -236,8 +285,7 @@ function performResizeAll(newW, newH) {
         validationStats = null;
         isStatsDirty = false;
         setDirty(true);
-        
-        resetView();
+
         if (typeof updateResizeInputs === 'function') updateResizeInputs();
         render();
 
@@ -297,25 +345,21 @@ function updateResizeInputs(useOriginal = false) {
     // 1. Safety Check: ensure workspace exists
     if (!drawCanvas.width) return;
     
-	// Determine image reference: bgCanvas/originalImg for "Original", drawCanvas for "Current"
+	// Determine size reference: originalSize for "Original", drawCanvas for "Current"
     let refW, refH;
-    if (useOriginal && originalImg) {
-        refW = originalImg.width;
-        refH = originalImg.height;
+    if (useOriginal && originalSize) {
+        refW = originalSize.w;
+        refH = originalSize.h;
     } else {
         refW = drawCanvas.width;
         refH = drawCanvas.height;
     }
 
     if (unitSelect.value === 'px') {
-        targetW.value = Math.round(refW);
-        targetH.value = Math.round(refH);
+        setSizeFields(refW, refH, 'px');
     } else {
-        const pph = (parseFloat(document.getElementById('pp4h').value) || 1200) / 4;
-        const ppv = (parseFloat(document.getElementById('pp4v').value) || 1200) / 4;
-
-        targetW.value = (refW / pph).toFixed(2);
-        targetH.value = (refH / ppv).toFixed(2);
+        const { pph, ppv } = getGaugePerInch();
+        setSizeFields(refW / pph, refH / ppv, 'in');
     }
 }
 
@@ -324,16 +368,15 @@ const resetResizeLink = document.getElementById('resetResizeLink');
 /** 5. Reset to Original Dimensions Logic **/
 resetResizeLink.addEventListener('click', (e) => {
     e.preventDefault(); // Prevent page jump from '#' link
-    if (!originalImg) return;
+    if (!originalSize) return;
 
-    // We use the 'originalImg' reference we saved during upload
-    // to populate the width/height fields in the currently selected unit
+    // Populate the width/height fields with the size the chart had when it
+    // was created or loaded, in the currently selected unit. Both fields come
+    // from originalSize, so no aspect sync is needed (syncing would apply the
+    // current chart's ratio, which may differ from the original's).
     updateResizeInputs(true); // Passing 'true' to force original dimensions
 
-    // If Lock Aspect is on, ensure the ratio is maintained correctly
-	syncDimensions('width');
-
-	console.log("Resize inputs reset to original background dimensions.");
+	console.log(`Resize inputs reset to original size: ${originalSize.w} x ${originalSize.h}`);
 });
 
 

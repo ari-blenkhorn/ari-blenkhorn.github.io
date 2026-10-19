@@ -18,7 +18,27 @@ const resetPaletteBtn = document.getElementById('resetPaletteBtn');
 const aspectToggle = document.getElementById('usePhysicalAspect');
 
 // display pixels as squares or using stitch gauge?
-aspectToggle.addEventListener('change', render);
+// Keep the zoom and center, zooming out only if the stretched chart won't fit.
+// The zoom from before any such zoom-out is remembered, so toggling back
+// zooms in again instead of leaving the chart smaller.
+let aspectToggleZoom = null; // { base, result } from the last toggle
+
+aspectToggle.addEventListener('change', () => {
+	const oldAspectX = aspectToggle.checked ? 1 : gaugeAspectX();
+	const box = chartScreenBox(oldAspectX);
+	const { availW, availH } = fitArea();
+	const ax = aspectCorrectionX();
+
+	// Reuse the remembered zoom unless the user has zoomed since the last toggle
+	const base = (aspectToggleZoom && viewState.scale === aspectToggleZoom.result)
+		? aspectToggleZoom.base : viewState.scale;
+	const fitScale = Math.min(availW / (drawCanvas.width * ax), availH / drawCanvas.height);
+	viewState.scale = clampScale(Math.min(base, fitScale));
+	aspectToggleZoom = { base, result: viewState.scale };
+	viewState.x = box.cx - drawCanvas.width * ax * viewState.scale / 2;
+	viewState.y = box.cy - drawCanvas.height * viewState.scale / 2;
+	render();
+});
 
 // Toggle opacity slider visibility
 viewMode.addEventListener('change', () => {
@@ -96,27 +116,165 @@ function updateDisplayBuffer() {
     displayCtx.putImageData(id, 0, 0);
 }
 
+// Zoom limits, shared with zoomFromCenter
+const MIN_SCALE = 0.01;
+const MAX_SCALE = 100;
+// Fraction of the display area the chart fills when the view is reset
+const FIT_FRACTION = 0.9;
+
+function clampScale(s) {
+	return Math.min(MAX_SCALE, Math.max(MIN_SCALE, s));
+}
+
+// Horizontal stretch applied when showing non-square stitches
+// (1 when the toggle is off or the gauge is square)
+function aspectCorrectionX() {
+	return aspectToggle.checked ? gaugeAspectX() : 1;
+}
+
+// Stitch aspect from the gauge, whether or not it's being displayed
+function gaugeAspectX() {
+	const { pph, ppv } = appliedGauge();
+	return ppv / pph;
+}
+
+// Gauge (stitches and rows per inch) currently applied to the chart: the
+// reference recorded when it was created, loaded, or regauged. Values typed
+// into the gauge fields don't affect the display until they're applied.
+function appliedGauge() {
+	const typed = (input) => (parseFloat(input.value) || 1200) / 4;
+	return {
+		pph: parseFloat(pp4hInput.dataset.oldGauge) || typed(pp4hInput),
+		ppv: parseFloat(pp4vInput.dataset.oldGauge) || typed(pp4vInput),
+	};
+}
+
+// Horizontal stretch of a drawing context relative to its vertical scale
+// (non-square stitches), read from the context so PDF export works too
+function contextAspectX(c) {
+	const m = c.getTransform();
+	return m.d ? m.a / m.d : 1;
+}
+
+// Draw ruler text at a real font size in screen space, anchored at chart
+// coordinates (x, y). Text drawn at a tiny font size inside the heavily scaled
+// chart transform gets glyphs clipped depending on where it lands, which shows
+// up while panning; drawing it unscaled also keeps it from being stretched by
+// non-square stitches. `font` is a CSS font in screen pixels, e.g. "12px monospace".
+function fillTextScreen(c, text, x, y, font) {
+	const m = c.getTransform();
+	// Device pixels per screen pixel: 1 on screen, higher for PDF export
+	const k = m.d / viewState.scale;
+	const p = new DOMPoint(x, y).matrixTransform(m);
+	c.save();
+	c.setTransform(k, 0, 0, k, 0, 0);
+	c.font = font;
+	c.fillText(text, Math.round(p.x) / k, Math.round(p.y) / k);
+	c.restore();
+}
+
+// Width (in stitch units) of the square row-color markers right of the chart
+function rowMarkerWidth(c) {
+	return 1 / contextAspectX(c);
+}
+
+// Ruler label spacing, from the on-screen size of one stitch
+function rulerStep(pxPerStitch) {
+	return pxPerStitch > 2 ? 10 : (pxPerStitch > 0.5 ? 50 : 200);
+}
+
+// The main canvas's pixel buffer is sized in device pixels (CSS size times
+// devicePixelRatio), so Chrome never resamples it when the browser is zoomed
+// or the display is scaled; resampling drops rows of pixels and clips text.
+// viewState and all layout below are in CSS pixels: canvas.clientWidth/Height.
+function canvasDPR() {
+	const cssW = canvas.getBoundingClientRect().width;  // unrounded, unlike clientWidth
+	return cssW ? canvas.width / cssW : 1;
+}
+
+// Exact size of the canvas in device pixels, as Chrome lays it out. With a
+// fractional devicePixelRatio (e.g. 0.9 at 90% zoom), CSS size x dpr is not a
+// whole number, and rounding it ourselves still leaves a tiny stretch that
+// duplicates or drops a column of pixels somewhere. The observer reports the
+// size Chrome actually uses, so the buffer maps 1:1 to the screen.
+let canvasDeviceSize = null;
+if (window.ResizeObserver) {
+	const ro = new ResizeObserver(entries => {
+		const box = entries[0].devicePixelContentBoxSize && entries[0].devicePixelContentBoxSize[0];
+		if (!box) return;
+		canvasDeviceSize = { w: box.inlineSize, h: box.blockSize };
+		// Keep the buffer matched (e.g. after a browser zoom) without moving the view
+		if (canvas.width !== canvasDeviceSize.w || canvas.height !== canvasDeviceSize.h) {
+			canvas.width = canvasDeviceSize.w;
+			canvas.height = canvasDeviceSize.h;
+			// Before load, there's no chart yet (just the placeholder canvas)
+			if (document.readyState === 'complete') render();
+		}
+	});
+	try { ro.observe(canvas, { box: 'device-pixel-content-box' }); }
+	catch (e) { ro.disconnect(); }  // browser doesn't support that box; fall back to rounding
+}
+
+function sizeCanvasBuffer() {
+	if (canvasDeviceSize) {
+		canvas.width = canvasDeviceSize.w;
+		canvas.height = canvasDeviceSize.h;
+	} else {
+		const dpr = window.devicePixelRatio || 1;
+		const rect = canvas.getBoundingClientRect();
+		canvas.width = Math.round(rect.width * dpr);
+		canvas.height = Math.round(rect.height * dpr);
+	}
+}
+
+// Space the chart may fill: most of the display area below the ribbon,
+// always leaving room for the rulers
+function fitArea() {
+    const ribbonH = displayRibbon.classList.contains('collapsed') ? 0 : 40;
+    const viewW = canvas.clientWidth;
+    const areaH = canvas.clientHeight - ribbonH;
+    return {
+        ribbonH, areaH,
+        availW: Math.min(viewW * FIT_FRACTION, viewW - 80),
+        availH: Math.min(areaH * FIT_FRACTION, areaH - 80),
+    };
+}
+
 function resetView() {
 	if (!drawCanvas.width) return;
 
-    // Use the clientWidth of the container, which reflects the sidebar's state
-    const container = document.querySelector('.editor-container');
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
+    // The canvas fills the editor container (CSS 100%), which reflects the
+    // sidebar's state; size its pixel buffer to match in device pixels
+    sizeCanvasBuffer();
 
-    const ribbonH = displayRibbon.classList.contains('collapsed') ? 0 : 40;
-    const padding = 40;
+    const { ribbonH, areaH, availW, availH } = fitArea();
 
-    // Calculate available space minus the ribbon height
-    const availW = canvas.width - padding;
-    const availH = canvas.height - padding - ribbonH;
+    const ax = aspectCorrectionX();
+    viewState.scale = clampScale(Math.min(availW / (drawCanvas.width * ax), availH / drawCanvas.height));
 
-    viewState.scale = Math.min(availW / drawCanvas.width, availH / drawCanvas.height, 1);
-    
 	// Center horizontally
-    viewState.x = (canvas.width - drawCanvas.width * viewState.scale) / 2;
+    viewState.x = (canvas.clientWidth - drawCanvas.width * ax * viewState.scale) / 2;
     // Center vertically in the space BELOW the ribbon
-    viewState.y = ribbonH + (availH - drawCanvas.height * viewState.scale) / 2;
+    viewState.y = ribbonH + (areaH - drawCanvas.height * viewState.scale) / 2;
+}
+
+// On-screen box the chart currently occupies. Capture this before
+// changing the chart's resolution, then pass it to keepApparentSize().
+function chartScreenBox(ax = aspectCorrectionX()) {
+	const w = drawCanvas.width * ax * viewState.scale;
+	const h = drawCanvas.height * viewState.scale;
+	return { w, h, cx: viewState.x + w / 2, cy: viewState.y + h / 2 };
+}
+
+// After a resolution change, zoom so the chart keeps the same
+// on-screen size and center it had before (box from chartScreenBox).
+function keepApparentSize(box) {
+	if (!drawCanvas.width || !box.w || !box.h) { resetView(); return; }
+
+	const ax = aspectCorrectionX();
+	viewState.scale = clampScale(Math.min(box.w / (drawCanvas.width * ax), box.h / drawCanvas.height));
+	viewState.x = box.cx - drawCanvas.width * ax * viewState.scale / 2;
+	viewState.y = box.cy - drawCanvas.height * viewState.scale / 2;
 }
 
 
@@ -140,26 +298,20 @@ function render() {
 		// ----------------------------------
 
 		// 1. Calculate the Aspect Ratio Correction
-		let aspectCorrX = 1;
-		let aspectCorrY = 1;
-
-		if (aspectToggle.checked) {
-			const pph = (parseFloat(document.getElementById('pp4h').value) || 1200) / 4;
-			const ppv = (parseFloat(document.getElementById('pp4v').value) || 1200) / 4;
-			
-			// If stitch gauge is 60 rows x 30sts, pixels are twice as tall as they are wide.
-			// To show them physically correct, we scale the X axis.
-			if (pph !== ppv) {
-				aspectCorrX = ppv / pph; 
-			}
-		}
+		// If stitch gauge is 60 rows x 30sts, pixels are twice as tall as they are wide.
+		// To show them physically correct, we scale the X axis.
+		const aspectCorrX = aspectCorrectionX();
 
 		// 2. Apply View Transformation
 		// We multiply the user's zoom (viewState.scale) by our aspect correction
 		const finalScaleX = viewState.scale * aspectCorrX;
 		const finalScaleY = viewState.scale;
 
-		ctx.translate(Math.floor(viewState.x), Math.floor(viewState.y));
+		// Work in CSS pixels on a device-pixel buffer (see canvasDPR),
+		// snapping the chart origin to a whole device pixel
+		const dpr = canvasDPR();
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		ctx.translate(Math.round(viewState.x * dpr) / dpr, Math.round(viewState.y * dpr) / dpr);
 		ctx.scale(finalScaleX, finalScaleY);
 
     
@@ -259,47 +411,59 @@ function drawRulers(c,w,h) {
 	const vs = viewState.scale;
 	//console.log(`drawRulers: cs ${cs}, vs ${vs}`)
 
+	// Non-square stitches stretch the x axis; undo that for horizontal
+	// lengths and text so they look the same as on the other ruler
+	const ax = contextAspectX(c);
+
 	// Dynamic step: ensures we don't crowd the screen with numbers
 	// this needs to be viewstate not currentscale(c) so that it's reasonable
-	// whether onscreen or to PDF
-	const step = vs > 2 ? 10 : (vs > 0.5 ? 50 : 200);
+	// whether onscreen or to PDF. Columns are stretched by ax.
+	const stepX = rulerStep(vs * ax);
+	const stepY = rulerStep(vs);
 
 	// 3 July: definitely vs, not cs -- don't want them 6x shorter
     const tickSize = 15 / vs; // Longer ticks to cross checkers
-    const fontSize = 12 / vs;
-    const labelOffset = 20 / vs; // Pushes labels past the checkers
+    const font = "12px monospace"; // screen pixels, see fillTextScreen
 
-    c.font = `${fontSize}px monospace`;
-    c.fillStyle = ctx.strokeStyle = "cyan";
+    c.fillStyle = c.strokeStyle = "cyan";
     c.lineWidth = 2 / vs;
-	//console.log(`drawRulers:  font size ${fontSize}, lineWidth ${c.lineWidth}`);
 
     // --- Horizontal Ruler (Bottom - RTL) ---
     c.textAlign = "center";
-    for (let dx = step; dx <= w; dx += step) {
+    // Hang labels from their top edge, a small gap below the tick, so the
+    // tick never runs into the digits
+    c.textBaseline = "top";
+    for (let dx = stepX; dx <= w; dx += stepX) {
         const rx = w - dx;
         c.beginPath();
         c.moveTo(rx, h);
         c.lineTo(rx, h + tickSize);
         c.stroke();
-        c.fillText(dx, rx, h + tickSize + fontSize);
+        fillTextScreen(c, dx, rx, h + tickSize + (3 / vs), font);
     }
 
     // --- Vertical Ruler (Right - BTT) ---
+    // Ticks and labels start past the row-color markers, which are one
+    // row tall and so get wider as you zoom in
+    const markerEnd = w + rowMarkerWidth(c);
+    const tickEnd = markerEnd + (8 / vs) / ax;
+    const labelX = tickEnd + (4 / vs) / ax;
     c.textAlign = "left";
-    for (let dy = step; dy <= h; dy += step) {
+    c.textBaseline = "middle";
+    for (let dy = stepY; dy <= h; dy += stepY) {
         const ry = h - dy;
 
         c.beginPath();
         // Start tick at the image edge (w)
         c.moveTo(w, ry);
-        // Extend tick through the checker (w+1) and into the margin
-        c.lineTo(w + tickSize, ry);
+        // Extend tick through the markers and into the margin
+        c.lineTo(tickEnd, ry);
         c.stroke();
 
-        // Position label 20px (screen space) to the right of the image edge
-        c.fillText(dy, w + labelOffset, ry + (fontSize / 3));
+        // Position label just past the tick, centered on it
+        fillTextScreen(c, dy, labelX, ry, font);
     }
+    c.textBaseline = "alphabetic";
 }
 
 function drawPhysicalSizeRulers(c,w,h) {
@@ -314,25 +478,27 @@ function drawPhysicalSizeRulers(c,w,h) {
 				vs > 5 ? 1 : (vs > 3 ? 2 : 5);
 
 
-    // Calculate gauge from your "Pixels per 4 Inches" inputs
-    const pph = parseFloat(document.getElementById('pp4h').value) / 4;
-    const ppv = parseFloat(document.getElementById('pp4v').value) / 4;
+    // Gauge applied to the chart (not values typed but not yet applied)
+    const { pph, ppv } = appliedGauge();
+    // Undo the non-square-stitch stretch for horizontal lengths and text
+    const ax = contextAspectX(c);
 
     // Styling for the print ruler
-    c.font = `bold ${14 / vs}px sans-serif`;
+    const font = "bold 14px sans-serif"; // screen pixels, see fillTextScreen
     c.fillStyle = "#FFD700"; // Gold color to distinguish from pixel ruler
     c.strokeStyle = "#FFD700";
     c.lineWidth = 2 / vs;
 
 	// --- 1. VERTICAL RULER (Left Side - BTT) ---
     c.textAlign = "right";
+    c.textBaseline = "middle";
 
     // Draw Ticks (Bottom-to-Top orientation)
     // We loop through inches (increments of 'step')
     for (let inch = step; inch * ppv <= h; inch += step) {
         const rawY = (h - 1) - (inch * ppv);
         const isMajor = inch % 1 === 0;
-        const tickWidth = (isMajor ? 25 : 12) / vs;
+        const tickWidth = (isMajor ? 25 : 12) / vs / ax;
 
         c.beginPath();
         c.moveTo(0, rawY);
@@ -340,12 +506,13 @@ function drawPhysicalSizeRulers(c,w,h) {
         c.stroke();
 
         if (isMajor && inch > 0) {
-            c.fillText(`${inch}"`, -tickWidth - (5 / vs), rawY + (5 / vs));
+            fillTextScreen(c, `${inch}"`, -tickWidth - (5 / vs / ax), rawY, font);
         }
     }
 
     // --- 2. HORIZONTAL RULER (Top Side - RTL) ---
     c.textAlign = "center";
+    c.textBaseline = "bottom";
     for (let inch = step; inch * pph <= w; inch += step) {
         // Since the image is RTL, 0 inches is at the far right (w)
         const rawX = w - (inch * pph);
@@ -360,9 +527,10 @@ function drawPhysicalSizeRulers(c,w,h) {
 
         if (isMajor && inch > 0) {
             // Position label above the tick
-            c.fillText(`${inch}"`, rawX, -tickHeight - (5 / vs));
+            fillTextScreen(c, `${inch}"`, rawX, -tickHeight - (3 / vs), font);
         }
     }
+    c.textBaseline = "alphabetic";
 }
 
 // Add listener to re-render when toggled
@@ -371,7 +539,9 @@ physicalRulersToggle.addEventListener('change', render);
 function drawRowCheckers(c,w,h) {
 	if (!drawCanvas.width) return;
     
-    const squareWidth = 1; // Keep the row markers square, i.e. one pixel in image-space
+    // Keep the row markers square: as wide on screen as one row is tall,
+    // even when non-square stitches stretch the x axis
+    const squareWidth = rowMarkerWidth(c);
     
     // Determine the starting color based on the toggle
     // If Bottom is White (true), then even/odd logic flips
@@ -549,40 +719,41 @@ function drawColumnSeparator(c,w,h) {
     c.stroke();
 }
 
+// Brush footprint: offsets lo..hi (size stitches) from the center stitch.
+// Odd sizes are centered; even sizes extend one more stitch up/left.
+function brushSpan() {
+    const size = Math.max(1, parseInt(brushSlider.value) || 1);
+    const lo = -Math.floor(size / 2);
+    return { size, lo, hi: lo + size - 1 };
+}
+
 function drawBrushPreview(c) {
     // Only draw if mouse is over image and not currently panning
     if (mouseImagePos.x === null || isPanning) return;
 
-    const size = parseInt(brushSlider.value);
-    const radius = Math.floor(size / 2);
-    
-    // Calculate the top-left corner of the brush area
-    const startX = mouseImagePos.x - radius;
-    const startY = mouseImagePos.y - radius;
+    // Only over a stitch that can be drawn on: inside the chart and, with
+    // symmetry, inside the active drawing region
+    const w = drawCanvas.width, h = drawCanvas.height;
+    const mx = mouseImagePos.x, my = mouseImagePos.y;
+    if (mx < 0 || mx >= w || my < 0 || my >= h) return;
+    if (!pixelInActiveDrawingArea(mx, my, w, h)) return;
 
-	const pph = (parseFloat(document.getElementById('pp4h').value) || 1200) / 4;
-    const ppv = (parseFloat(document.getElementById('pp4v').value) || 1200) / 4;
-    
-    // Determine the visual aspect correction used in render()
-    const isPhysical = document.getElementById('usePhysicalAspect').checked;
-    const aspectCorrX = isPhysical ? (ppv / pph) : 1;
+    // Outline the stitches paintBrushAt() will paint, trimmed to the chart
+    const { lo, hi } = brushSpan();
+    const x0 = Math.max(0, mx + lo), x1 = Math.min(w, mx + hi + 1);
+    const y0 = Math.max(0, my + lo), y1 = Math.min(h, my + hi + 1);
 
+    // The context already includes the non-square-stitch stretch (see
+    // render), so the outline matches the stitches without extra scaling
+    // Black line under white dashes, so it shows on any background color
+    const px = 1 / viewState.scale;  // one screen pixel
     c.save();
-	
-	// Apply the horizontal stretch to the context before drawing the rect
-    // This makes the 5x5 square look like a 5x5 physical rectangle
-    c.scale(aspectCorrX, 1);
-
-    // CRITICAL: We must divide the X position by the scale factor 
-    // because the coordinate system itself is now stretched horizontally
-    const drawX = startX / aspectCorrX;
-
-    c.setLineDash([2 / viewState.scale, 2 / viewState.scale]);
-    c.strokeStyle = "rgba(255, 255, 0, 0.8)";
-    c.lineWidth = 1 / viewState.scale;
-    
-    // Draw the rectangle (it will be visually stretched by the scale above)
-    c.strokeRect(drawX, startY, size, size);
+    c.lineWidth = 2 * px;
+    c.strokeStyle = "#000000";
+    c.strokeRect(x0, y0, x1 - x0, y1 - y0);
+    c.setLineDash([4 * px, 4 * px]);
+    c.strokeStyle = "#ffffff";
+    c.strokeRect(x0, y0, x1 - x0, y1 - y0);
     c.restore();
 
     // Reset dash for other drawing functions
