@@ -72,7 +72,10 @@ document.getElementById('btnResizeAllLayers').addEventListener('click', () => {
     if (!drawCanvas.width) return;
 
     const { w, h } = getTargetDimensions();
-    if (w > 0 && h > 0) performResizeAll(w, h);
+    if (w > 0 && h > 0) {
+        recordUndo('resize', { bg: true });
+        performResizeAll(w, h);
+    }
 });
 
 // CHANGE GAUGE
@@ -100,6 +103,7 @@ document.getElementById('btnGauge').addEventListener('click', () => {
     // execute the 3-layer resize, passing the old aspect so the chart keeps
     // its on-screen size. This also makes the next gauge change relative to this one.
     const oldAspectX = aspectToggle.checked ? (oldPpv / oldPph) : 1;
+    recordUndo('gauge change', { bg: true });  // before the new gauge is applied
     updateGaugeReference();
     performResizeAll(targetW, targetH, oldAspectX);
 
@@ -146,6 +150,7 @@ btnResizeChartToBG.addEventListener('click', () => {
 
     // 2. Confirm if data might be lost (resizing a canvas clears it)
     if (confirm("Resizing the drawing layer will clear your current work. Match size anyway?")) {
+        recordUndo('match to reference');
 
         // Save old dimensions for logging
         const oldW = drawCanvas.width;
@@ -405,6 +410,7 @@ document.getElementById('cropToSquareBtn').addEventListener('click', () => {
     }
 
     if (confirm("This will crop your image to a centered square based on the shortest side. Continue?")) {
+        recordUndo('crop', { bg: true });
         // 1. Find the size of the square (the smaller dimension)
         const size = Math.min(w, h);
 

@@ -30,6 +30,15 @@
 }
 
 .ribbon-group { display: flex; align-items: center; gap: 10px; }
+
+/* Undo / Redo */
+.ribbon-btn {
+    background: #3a3a3a; color: #eee;
+    border: 1px solid #555; border-radius: 3px;
+    padding: 3px 10px; cursor: pointer; white-space: nowrap;
+}
+.ribbon-btn:hover:not(:disabled) { background: #4a4a4a; border-color: #777; }
+.ribbon-btn:disabled { opacity: 0.4; cursor: default; }
 .ribbon-divider { width: 1px; height: 20px; background: #444; }
 
 .ribbon-group label { cursor: pointer; display: flex; align-items: center; gap: 5px; }

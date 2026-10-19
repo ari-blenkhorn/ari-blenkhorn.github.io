@@ -14,9 +14,9 @@
 
     <div class="sidebar" id="sidebar">
 		<div class="sidebar-header">
-		        <button id="aboutBtn" title="About this App" style="width: auto; background: #444;">ⓘ</button>
-				<button id="toggleFullscreen" title="Enter Fullscreen" style="width: auto; background: #444;">⛶</button>
-				<button id="toggleSidebar" title="Collapse Sidebar" style="width: auto; background: #444;">◀</button>
+		        <button id="aboutBtn" title="About MoYa" style="width: auto; background: #444;">ⓘ</button>
+				<button id="toggleFullscreen" title="Full screen" style="width: auto; background: #444;">⛶</button>
+				<button id="toggleSidebar" title="Hide the sidebar" style="width: auto; background: #444;">◀</button>
 
 		</div>
 		<div class="sidebar-section">
@@ -31,8 +31,8 @@
 			<!-- Collapsible Content -->
 			<div class="section-content collapsed">
 				<div class="control-group">
-					<label for="unitSelect">Unit:</label>
-					<select id="unitSelect">
+					<label for="unitSelect" title="Set the chart size in stitches and rows, or in inches using your gauge">Unit:</label>
+					<select id="unitSelect" title="Set the chart size in stitches and rows, or in inches using your gauge">
 						<option value="px">Stitches/Rows</option>
 						<option value="in">Inches</option>
 					</select>
@@ -41,23 +41,23 @@
 				<div class="control-group">
 					<label for="targetDims">Width / Height:</label>
 					<div id="targetDims" style="display:flex; gap:5px;">
-						<input type="number" id="targetW" value="800" style="width:50%;">
-						<input type="number" id="targetH" value="600" style="width:50%;">
+						<input type="number" id="targetW" value="800" style="width:50%;" title="Chart width (stitches, or inches)">
+						<input type="number" id="targetH" value="600" style="width:50%;" title="Chart height (rows, or inches)">
 					</div>
-					<a href="#" id="resetResizeLink" style="font-size: 0.7rem; color: #007acc; text-decoration: underline; margin-top: 5px; display: inline-block;">Reset to Original</a>
+					<a href="#" id="resetResizeLink" style="font-size: 0.7rem; color: #007acc; text-decoration: underline; margin-top: 5px; display: inline-block;" title="Fill in the size the chart had when it was created or loaded">Reset to Original</a>
 				</div>
 
 				<div class="toggle-group">
-					<input type="checkbox" id="lockAspect" checked>
-					<label for="lockAspect">Lock Aspect Ratio of Image</label>
+					<input type="checkbox" id="lockAspect" checked title="Keep the width-to-height ratio when you change one value">
+					<label for="lockAspect" title="Keep the width-to-height ratio when you change one value">Lock Aspect Ratio of Image</label>
 				</div>
 
 				<!-- Gauge controls -->
 				<div id="gaugeControls" style="display:none;" class="control-group">
 					<label for="gauge">Gauge for 4x4 Inch Swatch (stitches/rows):</label>
 					<div id="gauge" style="display:flex; gap:5px;">
-						<input type="number" id="pp4h" value="20" style="width:50%;">
-						<input type="number" id="pp4v" value="20" style="width:50%;">
+						<input type="number" id="pp4h" value="20" style="width:50%;" title="Stitches in 4 inches, from your gauge swatch">
+						<input type="number" id="pp4v" value="20" style="width:50%;" title="Rows in 4 inches, from your gauge swatch">
 					</div>
 					<div id="gaugeDisplay" style="font-size: 0.75rem; color: #00ff00; margin-top: 5px;">
 						Per inch: 5 stitches x 5 rows
@@ -66,12 +66,12 @@
 
 				<!-- Action Buttons -->
 				<div class="button-stack">
-					<button id="btnNew" style="background-color: #f39c14; margin-top: 10px;">Create Blank Chart</button>
-					<button id="btnResizeAllLayers" style="background-color: #e38c12; margin-top: 10px;">Resize All Layers</button>
-					<button id="btnGauge" style="background-color: #d37c10; margin-top: 10px;">Change Gauge (Keep physical size)</button>
-					<button id="btnResizeChartToBG" style="background-color: #c36c0d; margin-top: 10px;">Match Chart Size to Reference</button>
-					<button id="btnResizeBGToChart" style="background-color: #b35c0b; margin-top: 10px;">Match Reference Size to Chart</button>
-					<button id="cropToSquareBtn" style="background-color: #d35400; margin-top: 10px;">Crop to Square (Centered)</button>
+					<button id="btnNew" style="background-color: #f39c14; margin-top: 10px;" title="Start a new blank chart at this size (Ctrl+Z to undo)">Create Blank Chart</button>
+					<button id="btnResizeAllLayers" style="background-color: #e38c12; margin-top: 10px;" title="Resample the chart and reference image to this size (Ctrl+Z to undo)">Resize All Layers</button>
+					<button id="btnGauge" style="background-color: #d37c10; margin-top: 10px;" title="Apply the new gauge, resizing the chart to keep its physical size (Ctrl+Z to undo)">Change Gauge (Keep physical size)</button>
+					<button id="btnResizeChartToBG" style="background-color: #c36c0d; margin-top: 10px;" title="Make the chart the same size as the reference image; clears the chart (Ctrl+Z to undo)">Match Chart Size to Reference</button>
+					<button id="btnResizeBGToChart" style="background-color: #b35c0b; margin-top: 10px;" title="Resize the reference image to match the chart (work in progress)">Match Reference Size to Chart</button>
+					<button id="cropToSquareBtn" style="background-color: #d35400; margin-top: 10px;" title="Crop the chart and reference image to a centered square (Ctrl+Z to undo)">Crop to Square (Centered)</button>
 				</div>
 			</div>
 		</div>
@@ -83,26 +83,26 @@
 					CHART / DRAWING LAYER
 				</p>
 
-				<input type="file" id="uploadFront" accept="image/*">
+				<input type="file" id="uploadFront" accept="image/*" title="Load an image file as the chart">
 
 				
 				<div style="display: flex; gap: 5px; margin-top: 10px;">
-					<button id="revertBtn" disabled>Revert to Original Image</button>
-					<button id="clearBtn" disabled>Clear</button>
+					<button id="revertBtn" disabled title="Discard all edits and go back to the loaded image (Ctrl+Z to undo)">Revert to Original Image</button>
+					<button id="clearBtn" disabled title="Clear everything and start a new chart (Ctrl+Z to undo)">Clear</button>
 				</div>
 
 				
 				<div style="display: flex; gap: 5px; margin-top: 5px;">
-					<button id="downloadImgBtn" disabled style="background-color: #28a745; margin-top: 5px;">Save Raw Image (No Markings)</button>
-					<button id="downloadChartImgBtn" disabled style="background-color: #28a745; margin-top: 5px;">Save Chart As Image</button>
-					<button id="downloadChartPDFBtn" disabled style="background-color: #e74c3c; margin-top: 5px;">Save Chart As PDF</button>
+					<button id="downloadImgBtn" disabled style="background-color: #28a745; margin-top: 5px;" title="Save the chart as a plain image, one pixel per stitch">Save Raw Image (No Markings)</button>
+					<button id="downloadChartImgBtn" disabled style="background-color: #28a745; margin-top: 5px;" title="Save the chart with grid, rulers, and markings as shown">Save Chart As Image</button>
+					<button id="downloadChartPDFBtn" disabled style="background-color: #e74c3c; margin-top: 5px;" title="Save a printable PDF of the chart with rulers and markings">Save Chart As PDF</button>
 				</div>
 
 				<p style="font-size: 0.8rem; color: #aaa; margin-top: 15px;">
 					REFERENCE IMAGE
 				</p>
 
-				<input type="file" id="uploadBack" accept="image/*">
+				<input type="file" id="uploadBack" accept="image/*" title="Load a reference image to trace over or convert into a chart">
 
 <!--
 				<p style="font-size: 0.8rem; color: #aaa; margin-top: 15px;">
@@ -128,20 +128,20 @@
 					Generate Chart from Source Image
 				</div>
 				<div class="control-group">
-					<button id="thresholdBtn" style="flex: 1; background-color: #9c27b0; margin-top: 10px;">Threshold</button>
-					<label for="thresholdRange">Threshold value: <span id="threshVal">128</span></label>
-					<input type="range" id="thresholdRange" min="0" max="255" value="128" style="accent-color: #9c27b0;">
+					<button id="thresholdBtn" style="flex: 1; background-color: #9c27b0; margin-top: 10px;" title="Convert the reference image to a chart: lighter areas become Color A, darker areas Color B (Ctrl+Z to undo)">Threshold</button>
+					<label for="thresholdRange" title="Brightness cutoff used by Threshold">Threshold value: <span id="threshVal">128</span></label>
+					<input type="range" id="thresholdRange" min="0" max="255" value="128" style="accent-color: #9c27b0;" title="Brightness cutoff used by Threshold">
 				</div>
 				<div class="control-group">
-					<button id="ditherBtn" style="flex: 1; background-color: #9c27b0; margin-top: 10px;">Dither</button>
-					<label for="ditherStrength">Dither Strength: <span id="ditherVal">100</span>%</label>
-					<input type="range" id="ditherStrength" min="0" max="100" value="100" style="accent-color: #9c27b0;">
+					<button id="ditherBtn" style="flex: 1; background-color: #9c27b0; margin-top: 10px;" title="Convert the reference image to a chart, using dithering to keep shading (Ctrl+Z to undo)">Dither</button>
+					<label for="ditherStrength" title="How much shading detail dithering keeps">Dither Strength: <span id="ditherVal">100</span>%</label>
+					<input type="range" id="ditherStrength" min="0" max="100" value="100" style="accent-color: #9c27b0;" title="How much shading detail dithering keeps">
 				</div>
 				<div class="control-group">
 
 					<div class="toggle-group">
-						<input type="checkbox" id="serpentineScan" checked>
-						<label for="serpentineScan">Serpentine Scan (Boustrodephon)</label>
+						<input type="checkbox" id="serpentineScan" checked title="Alternate the dithering direction on each row, which reduces streaks">
+						<label for="serpentineScan" title="Alternate the dithering direction on each row, which reduces streaks">Serpentine Scan (Boustrodephon)</label>
 					</div>
 					<!--   restore if/when ready to implement bottom-up dithering
 					<div class="toggle-group">
@@ -150,23 +150,23 @@
 					</div>
 					--->
 					<div class="toggle-group">
-						<input type="checkbox" id="validateWhileDithering" checked>
-						<label for="validateWhileDithering">Validate while Dithering</label>
+						<input type="checkbox" id="validateWhileDithering" checked title="Keep the dithered chart valid for mosaic as it is generated">
+						<label for="validateWhileDithering" title="Keep the dithered chart valid for mosaic as it is generated">Validate while Dithering</label>
 					</div>
 				</div>
 				<div style="display: flex; gap: 5px;">
 					Chart Actions
 				</div>
 				<div class="control-group">
-					<button id="validateBtn" style="background-color: #f0ad4e; margin-top: 10px;">Validate Chart (V)</button>
+					<button id="validateBtn" style="background-color: #f0ad4e; margin-top: 10px;" title="Check the chart and outline stitches that cannot be worked in mosaic (V)">Validate Chart (V)</button>
 					<div class="toggle-group">
-						<input type="checkbox" id="firstRowA" checked>
-						<label for="firstRowA">First Row Color A</label>
+						<input type="checkbox" id="firstRowA" checked title="The first (bottom) row is worked in Color A">
+						<label for="firstRowA" title="The first (bottom) row is worked in Color A">First Row Color A</label>
 					</div>
 				</div>
 				<div class="control-group">
-					<button id="toggleInvalidBtn" style="background-color: #f0ad4e; margin-top: 10px;">Toggle All Invalid Stitches</button>
-					<button id="smartRepairBtn" style="background-color: #f0ad4e; margin-top: 10px;">Repair Invalid Stitches</button>
+					<button id="toggleInvalidBtn" style="background-color: #f0ad4e; margin-top: 10px;" title="Flip every invalid stitch to its row&#x27;s color (Ctrl+Z to undo)">Toggle All Invalid Stitches</button>
+					<button id="smartRepairBtn" style="background-color: #f0ad4e; margin-top: 10px;" title="Fix invalid stitches automatically (Ctrl+Z to undo)">Repair Invalid Stitches</button>
 				</div>
 
 				<div style="display: flex; gap: 5px;">
@@ -175,16 +175,18 @@
 				<div class="control-group">
 					<div style="display: flex; gap: 5px;">
 						<p style="font-size: 0.8rem; color: #aaa; margin-top: 10px;">
-						Click stitches to toggle color <br>
-						Adjust brush size to affect multiple stitches
+						Click a stitch to toggle its color <br>
+						Click and drag to draw in Color B <br>
+						Ctrl+Z to undo, Ctrl+Y to redo <br>
+						Brush size sets how many stitches each click or drag covers
 					</p></div>
-					<label for="brushSize">Brush Size: <span id="brushVal">1</span>px</label>
-					<input type="range" id="brushSize" min="1" max="10" step="1" value="1">
+					<label for="brushSize" title="How many stitches across each click or drag covers">Brush Size: <span id="brushVal">1</span>px</label>
+					<input type="range" id="brushSize" min="1" max="10" step="1" value="1" title="How many stitches across each click or drag covers">
 				</div>
 				<div class="control-group" style="display: flex; align-items: center; gap: 10px;">
 					<div style="flex: 1;">
-						<label for="symmetryMode">Symmetry:</label>
-						<select id="symmetryMode">
+						<label for="symmetryMode" title="Mirror what you draw across the chart">Symmetry:</label>
+						<select id="symmetryMode" title="Mirror what you draw across the chart">
 							 <option value="none">Whole Image</option>
 							<option value="vertical">Mirror L/R</option>
 							<option value="horizontal">Mirror T/B</option>
@@ -214,7 +216,7 @@
 					Scroll or (I)n and (O)ut to Zoom <br>
 					Space + Drag to Pan
 				</p>
-				<button id="resetView">Reset Zoom/Pan</button>
+				<button id="resetView" title="Fit the chart to the window. Zoom: I / O or mouse wheel. Pan: hold Space and drag, or drag with the middle button">Reset Zoom/Pan</button>
 			</div>
         </div>
 
@@ -223,27 +225,27 @@
 			<div class="section-content">
 				<label for="clearToColor">Clear Chart to...</label>
 				<div id="clearToColor" style="display: flex; gap: 5px; margin-top: 10px;">
-					<button id="clearTraceToABtn" style="background-color: #666; ">Palette A </button>
-					<button id="clearTraceToBBtn" style="background-color: #666; ">Palette B</button>
+					<button id="clearTraceToABtn" style="background-color: #666; " title="Fill the whole chart with Color A (Ctrl+Z to undo)">Palette A </button>
+					<button id="clearTraceToBBtn" style="background-color: #666; " title="Fill the whole chart with Color B (Ctrl+Z to undo)">Palette B</button>
 				</div>
 				<div style="display: flex; gap: 15px; margin-top: 10px;">
 					<div style="display: flex;  gap: 5px; ">
-						Color A  <input type="color" id="colorAInput" value="#ffffff">
+						Color A  <input type="color" id="colorAInput" value="#ffffff" title="Color A: background, and the color of a new chart (white by default)">
 					</div>
 					<div style="display: flex;  gap: 5px; ">
-						Color B  <input type="color" id="colorBInput" value="#000000">
+						Color B  <input type="color" id="colorBInput" value="#000000" title="Color B: the drawing color (black by default)">
 					</div>
 				</div>
 				<div style="display: flex; gap: 5px; margin-top: 10px;">
-					<button id="swapPaletteBtn" style="background-color: #444; font-size: 0.8rem; margin: 10px 0;">Swap Palette Colors</button>
+					<button id="swapPaletteBtn" style="background-color: #444; font-size: 0.8rem; margin: 10px 0;" title="Swap the display colors of A and B">Swap Palette Colors</button>
 
-					<button id="resetPaletteBtn" style="background-color: #444; font-size: 0.8rem; margin: 10px 0;">Reset Palette to B&W</button>
+					<button id="resetPaletteBtn" style="background-color: #444; font-size: 0.8rem; margin: 10px 0;" title="Set Color A back to white and Color B to black">Reset Palette to B&W</button>
 				</div>
 			</div>
 		</div>
 
 		<div class="section" style="border-bottom: none;">
-			<button id="factoryResetBtn" >Reset All Settings & Workspace</button>
+			<button id="factoryResetBtn"  title="Clear the chart, all settings, and undo history">Reset All Settings & Workspace</button>
 		</div>
     </div>
 
@@ -252,27 +254,32 @@
         <!-- Display Ribbon with 'hide' button-->
         <div class="display-ribbon" id="displayRibbon">
             <div class="ribbon-group">
-                <label><input type="checkbox" id="showGrid" checked> Grid</label>
-                <label><input type="checkbox" id="showSubGrid" > Stitch grid</label>
+                <button id="undoBtn" class="ribbon-btn" disabled title="Nothing to undo (Ctrl+Z)">&#8630; Undo</button>
+                <button id="redoBtn" class="ribbon-btn" disabled title="Nothing to redo (Ctrl+Y or Ctrl+Shift+Z)">&#8631; Redo</button>
             </div>
             <div class="ribbon-divider"></div>
             <div class="ribbon-group">
-                <label><input type="checkbox" id="showPixelRulers" checked> Stitch/Row Rulers</label>
-                <label><input type="checkbox" id="showPhysicalRulers" > Physical Size Rulers</label>
+                <label title="Grid lines every few stitches"><input type="checkbox" id="showGrid" checked> Grid</label>
+                <label title="Outline every stitch"><input type="checkbox" id="showSubGrid" > Stitch grid</label>
             </div>
             <div class="ribbon-divider"></div>
             <div class="ribbon-group">
-                <label><input type="checkbox" id="usePhysicalAspect" >Non-square stitches</label>
+                <label title="Stitch and row numbers"><input type="checkbox" id="showPixelRulers" checked> Stitch/Row Rulers</label>
+                <label title="Inch rulers, from your gauge"><input type="checkbox" id="showPhysicalRulers" > Physical Size Rulers</label>
             </div>
             <div class="ribbon-divider"></div>
             <div class="ribbon-group">
-                <label><input type="checkbox" id="showErrors" > Invalid Stitches (V)</label>
+                <label title="Show stitches at their real shape, from your gauge"><input type="checkbox" id="usePhysicalAspect" >Non-square stitches</label>
+            </div>
+            <div class="ribbon-divider"></div>
+            <div class="ribbon-group">
+                <label title="Outline invalid stitches in red (V)"><input type="checkbox" id="showErrors" > Invalid Stitches (V)</label>
             </div>
             <div class="ribbon-divider"></div>
             <div class="ribbon-group">
 
-				<label for="markingsMode">Chart Markings</label>
-                <select id="markingsMode">
+				<label for="markingsMode" title="Mark anchor stitches for knitting (up) or crochet (down)">Chart Markings</label>
+                <select id="markingsMode" title="Mark anchor stitches for knitting (up) or crochet (down)">
                     <option value="none">None</option>
                     <option value="up">Up (knit)</option>
 					<option value="down">Down (crochet)</option>
@@ -282,8 +289,8 @@
 
             <div class="ribbon-divider"></div>
             <div class="ribbon-group">
-				<label for="viewMode">View</label>
-                <select id="viewMode">
+				<label for="viewMode" title="Show the chart, the reference image, or the chart over the reference (T toggles Trace)">View</label>
+                <select id="viewMode" title="Show the chart, the reference image, or the chart over the reference (T toggles Trace)">
                     <option value="palette">Chart</option>
                     <option value="original">Source Image</option>
 					<option value="trace">Trace Mode (T)</option>
@@ -291,20 +298,20 @@
 				
 
                 <span id="traceControl" style="display:none;">
-					<label for="traceOpacity">Opq: <span id="traceOpacityVal">30</span></label>
-                    <input type="range" id="traceOpacity" min="0" max="100" value="30" style="width:60px;">
+					<label for="traceOpacity" title="How strongly the chart shows over the reference image">Opq: <span id="traceOpacityVal">30</span></label>
+                    <input type="range" id="traceOpacity" min="0" max="100" value="30" style="width:60px;" title="How strongly the chart shows over the reference image">
                 </span>
 			</div>
 			<div class="ribbon-divider"></div>
-			<button id="hideRibbonBtn" title="Hide Ribbon (H)" style="background:none; border:none; color:#888; cursor:pointer;">▲</button>
+			<button id="hideRibbonBtn" title="Hide this toolbar (H)" style="background:none; border:none; color:#888; cursor:pointer;">▲</button>
 		</div>
 
 		<div class="editor-container">
 			<canvas id="mainCanvas"></canvas>
 			<!-- Small floating buttons to show hidden controls again 
 				TODO/CBB - better hotkeys, for both -->
-			<button id="openSidebar" class="hidden" title="Show Sidebar">▶</button>
-			<button id="showRibbonBtn" class="hidden" title="Show Ribbon (H)">▼</button>
+			<button id="openSidebar" class="hidden" title="Show the sidebar">▶</button>
+			<button id="showRibbonBtn" class="hidden" title="Show the toolbar (H)">▼</button>
 		</div>
 	</div>
 </div>   <!-- end of "main-layout" -->
@@ -362,6 +369,7 @@
     <script src="validate.js"></script>
     <script src="render.js"></script>
     <script src="resize.js"></script>
+    <script src="undo.js"></script>
     <script src="about.js"></script>
     <script src="imgProcessing.js"></script>
 	<script src="final.js"></script>

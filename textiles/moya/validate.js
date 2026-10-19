@@ -127,6 +127,8 @@ function repairInvalid(repairType)
         return;
     }
 
+    recordUndo(repairType == REPAIR.toggleAll ? 'invalid-stitch toggle' : 'repair');
+
     const w = drawCanvas.width;
     const h = drawCanvas.height;
     const imageData = drawCtx.getImageData(0, 0, w, h);

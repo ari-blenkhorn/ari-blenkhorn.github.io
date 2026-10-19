@@ -113,6 +113,9 @@ function resetToFactoryDefaults() {
     gaugeControls.style.display = 'none';
     updateGaugeDisplay();
 
+    // E. Nothing to undo in a fresh workspace
+    clearUndoHistory();
+
     alert("Settings and Workspace have been reset to factory defaults.");
     render();
 }
@@ -145,6 +148,8 @@ pp4vInput.addEventListener('input', updateGaugeDisplay);
 
 
 function createNewImage(w, h) {
+    recordUndo('new chart');  // no-op when there's no chart yet
+
     // 1. Setup Offscreen Canvas
     drawCanvas.width = w;
     drawCanvas.height = h;
@@ -246,6 +251,7 @@ function clearWorkspace() {
 /** 2. Event Listener **/
 clearBtn.addEventListener('click', () => {
     if (confirm("Clear all data and start over?")) {
+        recordUndo('clear', { bg: true });
         clearWorkspace();
     }
 });
@@ -274,6 +280,7 @@ function handleFile(file, targetLayer = 'drawing') {
     reader.onload = (e) => {
         const tempImg = new Image();
         tempImg.onload = () => {
+            recordUndo('image load', { bg: true });
 
 			if (targetLayer === 'background') {
 				//alert("Loading background layer");
@@ -550,6 +557,7 @@ function continueStroke(p) {
 
     if (!stroke.dragged) {
         stroke.dragged = true;
+        recordUndo('drawing');  // the whole stroke is one undo step
         paintBrushAt(stroke.start.x, stroke.start.y, FOREGROUND_VALUE);
     }
 
@@ -589,6 +597,7 @@ function handlePixelClick({ x: rawX, y: rawY }) {
             r: p[0], g: p[1], b: p[2], a: p[3]
         };
 
+        recordUndo('stitch toggle');
         togglePixelCommand(rawX, rawY, activePixel);
         render(); // Force a render to update the info box immediately
     }
@@ -756,6 +765,8 @@ function setDirty(dirty) {
 revertBtn.addEventListener('click', () => {
     if (!originalImg) return;
     if (confirm("Are you sure? This will undo all edits.")) {
+        recordUndo('revert');
+
         // Clear drawing canvas and redraw original
         drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
         drawCtx.drawImage(originalImg, 0, 0);

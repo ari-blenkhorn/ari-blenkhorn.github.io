@@ -114,11 +114,13 @@ class Color3 {
 
 
 /** Helper to Transfer/Process Data between Layers **/
-function processBackgroundToDrawing(processingFunction) {
+function processBackgroundToDrawing(processingFunction, undoLabel = 'image processing') {
     if (!bgCanvas.width || !bgCanvas.height) {
         alert("Please load a background image first.");
         return;
     }
+
+    recordUndo(undoLabel);
 
     // Ensure the Drawing Layer matches the Background size
     drawCanvas.width = bgCanvas.width;
@@ -167,7 +169,7 @@ thresholdBtn.addEventListener('click', () => {
             d[i+3] = 255; // Opaque
         }
         return id;
-    });
+    }, 'threshold');
 });
 
 function globalThreshold() {
@@ -382,7 +384,7 @@ document.getElementById('ditherBtn').addEventListener('click', () => {
             }
         }
         return id;
-    });
+    }, 'dither');
 });
 
 /** Helper to safely add error to a neighbor pixel **/

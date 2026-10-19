@@ -785,6 +785,8 @@ function clearTraceToColor(color)
 
     if (okToProceed)
 	{
+        recordUndo('clear');
+
 	 // 1. Fill the working canvas with specified color
         drawCtx.fillStyle = color;
         drawCtx.fillRect(0, 0, drawCanvas.width, drawCanvas.height);
