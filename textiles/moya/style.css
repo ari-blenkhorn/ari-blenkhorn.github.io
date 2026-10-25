@@ -170,6 +170,11 @@ canvas:fullscreen {
 .draw-hint .hint-lead { margin: 10px 0 2px; color: #ccc; }
 .draw-hint .hint-lead:first-of-type { margin-top: 0; }
 .draw-hint .hint-foot { margin: 12px 0 0; font-size: 0.9rem; color: #aaa; }
+.draw-hint .hint-never {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 10px; font-size: 0.85rem; color: #aaa; cursor: pointer;
+}
+.draw-hint .hint-never:hover { color: #ddd; }
 .draw-hint #drawHintClose {
     position: absolute; top: 8px; right: 10px;
     background: none; border: none; color: #aaa;

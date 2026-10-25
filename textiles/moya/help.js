@@ -106,23 +106,34 @@ window.addEventListener('keydown', (e) => {
 // Kept for callers and tests that used the Display-only version
 function toggleDisplayMenu(show) { toggleMenu(toolbarMenus[1], show); }
 
-// --- One-time drawing hint ---
-// Shown until the user dismisses it or makes their first edit;
-// remembered in this browser (if storage is available).
+// --- Welcome note ---
+// Shown each time the page loads, until the user dismisses it or makes
+// their first edit. (MoYa starts with a fresh chart on every load, so
+// the note comes back with it.) "Never show this again" turns it off in
+// this browser; Reset All Settings & Workspace turns it back on.
 
-const HINT_KEY = 'moyaDrawHintDismissed';
-
-function hintDismissed() {
-    try { return localStorage.getItem(HINT_KEY) === '1'; } catch (e) { return false; }
-}
+const WELCOME_OFF_KEY = 'moyaWelcomeNeverShow';
+const drawHintNever = document.getElementById('drawHintNever');
 
 function dismissDrawHint() {
     drawHint.classList.add('hidden');
-    try { localStorage.setItem(HINT_KEY, '1'); } catch (e) { /* not remembered */ }
 }
 
+function welcomeTurnedOff() {
+    try { return localStorage.getItem(WELCOME_OFF_KEY) === '1'; } catch (e) { return false; }
+}
+
+drawHintNever.addEventListener('change', () => {
+    try {
+        if (drawHintNever.checked) localStorage.setItem(WELCOME_OFF_KEY, '1');
+        else localStorage.removeItem(WELCOME_OFF_KEY);
+    } catch (e) { /* not remembered */ }
+});
+
 document.getElementById('drawHintClose').addEventListener('click', dismissDrawHint);
-if (!hintDismissed()) drawHint.classList.remove('hidden');
+if (!welcomeTurnedOff()) drawHint.classList.remove('hidden');
+// Earlier versions remembered the dismissal in this browser; clean that up
+try { localStorage.removeItem('moyaDrawHintDismissed'); } catch (e) { /* no storage */ }
 
 // Called by recordUndo() whenever the chart is about to be edited
 function onChartEdited() {

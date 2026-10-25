@@ -90,6 +90,8 @@ let isDirty = false;
 function resetToFactoryDefaults() {
     // A. Remove the saved workspace from the browser
     localStorage.removeItem('imgEditorWorkspace');
+    // ...and show the welcome note again next time
+    localStorage.removeItem('moyaWelcomeNeverShow');
 
     // B. Wipe the current image and canvases
     clearWorkspace();
