@@ -141,3 +141,128 @@ canvas:fullscreen {
 .modal-body a:hover { color: #a8d4ff; }
 
 .hidden { display: none !important; }
+
+/* One-time drawing hint, centered in the chart display area
+   (offset by half the 40px toolbar at the top) */
+.draw-hint {
+    position: absolute;
+    left: 50%;
+    top: calc(50% + 20px);
+    transform: translate(-50%, -50%);
+    z-index: 900; /* below the toolbar (1000) and modals (2000) */
+    box-sizing: border-box;
+    width: 420px;
+    max-width: calc(100% - 40px);
+    padding: 22px 28px 18px;
+    background: rgba(20, 20, 20, 0.92);
+    color: #eee;
+    border: 2px solid #007acc;
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    font-size: 1.15rem;
+    line-height: 1.5;
+}
+.draw-hint h3 { margin: 0 0 10px; font-size: 1.4rem; color: #6cb6ff; }
+.draw-hint ul { margin: 0; padding-left: 1.2em; }
+.draw-hint li { margin: 4px 0; }
+.draw-hint p { margin: 12px 0 0; font-size: 0.9rem; color: #999; }
+.draw-hint button {
+    position: absolute; top: 8px; right: 10px;
+    background: none; border: none; color: #aaa;
+    font-size: 1.8rem; line-height: 1; cursor: pointer; padding: 0 4px;
+}
+.draw-hint button:hover { color: #fff; }
+
+/* Non-square chart warning for 4x/8x symmetry, just below the toolbar */
+.sym-warning {
+    position: absolute;
+    left: 50%;
+    top: 50px;
+    transform: translateX(-50%);
+    z-index: 950; /* above the drawing hint and status strip, below the toolbar */
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: calc(100% - 40px);
+    padding: 8px 12px;
+    background: #4a3600;
+    color: #ffe9a8;
+    border: 1px solid #c99a1a;
+    border-radius: 6px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.5);
+    font-size: 0.9rem;
+}
+.sym-warning button {
+    flex-shrink: 0;
+    padding: 4px 10px;
+    background: #c99a1a; color: #1a1200;
+    border: none; border-radius: 4px;
+    font-weight: 600; cursor: pointer;
+}
+.sym-warning button:hover { background: #e0b030; }
+.sym-warning .sym-warning-close {
+    background: none; color: #ffe9a8;
+    font-size: 1.3rem; line-height: 1; padding: 0 2px; margin-left: 2px;
+}
+.sym-warning .sym-warning-close:hover { background: none; color: #fff; }
+
+/* Status strip across the bottom of the chart area. A flat, tinted bar
+   with no rounded corners or borders around items, so it reads as
+   information rather than as a control. */
+.status-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 900;
+    box-sizing: border-box;
+    padding: 5px 14px;
+    background: #12324a;
+    border-top: 2px solid #2b78ad;
+    color: #e3f0fb;
+    font-size: 0.85rem;
+    letter-spacing: 0.01em;
+    pointer-events: none; /* never blocks drawing */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.status-line { display: flex; gap: 24px; }
+.status-line .status-main { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.status-line .status-nav { flex: 0 0 auto; }
+.status-line .status-label {
+    font-weight: 700;
+    color: #8fd0ff;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    margin-right: 10px;
+}
+.status-line .status-sep { color: #5d8db0; margin: 0 8px; }
+.status-line b { color: #ffffff; }
+.status-swatch {
+    display: inline-block;
+    width: 10px; height: 10px;
+    margin: 0 4px 0 2px;
+    border: 1px solid #888;
+    vertical-align: -1px;
+}
+
+/* Keyboard Shortcuts panel */
+.shortcuts-table { border-collapse: collapse; width: 100%; margin-bottom: 10px; }
+.shortcuts-table th {
+    text-align: left; color: #6cb6ff; font-weight: 600;
+    padding: 12px 0 4px; border-bottom: 1px solid #333;
+}
+.shortcuts-table td { padding: 4px 12px 4px 0; vertical-align: top; }
+.shortcuts-table td:first-child { white-space: nowrap; color: #eee; }
+kbd {
+    display: inline-block;
+    padding: 0 5px;
+    font: 0.85em monospace;
+    color: #eee;
+    background: #333;
+    border: 1px solid #555;
+    border-bottom-width: 2px;
+    border-radius: 3px;
+}

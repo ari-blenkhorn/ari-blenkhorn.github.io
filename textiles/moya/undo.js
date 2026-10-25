@@ -30,6 +30,7 @@ function captureState(includeBg) {
 // Undo/Redo tooltips; bg: true if the edit also changes the background.
 function recordUndo(label, { bg = false } = {}) {
     if (!drawCanvas.width) return;
+    if (typeof onChartEdited === 'function') onChartEdited();  // see help.js
     const state = captureState(bg);
     state.label = label;
     undoStack.push(state);

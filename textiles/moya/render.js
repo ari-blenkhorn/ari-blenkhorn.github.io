@@ -231,8 +231,11 @@ function sizeCanvasBuffer() {
 // always leaving room for the rulers
 function fitArea() {
     const ribbonH = displayRibbon.classList.contains('collapsed') ? 0 : 40;
+    // Keep the bottom ruler clear of the status line (see help.js)
+    const statusEl = document.getElementById('statusLine');
+    const statusH = statusEl ? statusEl.offsetHeight + 8 : 0;
     const viewW = canvas.clientWidth;
-    const areaH = canvas.clientHeight - ribbonH;
+    const areaH = canvas.clientHeight - ribbonH - statusH;
     return {
         ribbonH, areaH,
         availW: Math.min(viewW * FIT_FRACTION, viewW - 80),
@@ -365,6 +368,7 @@ function render() {
 
 	// ---  UI Sync (Always call this!) ---
 	updateStatusWindow();
+	updateSymmetryWarning();
 }
 
 function currentScale(ctx) {

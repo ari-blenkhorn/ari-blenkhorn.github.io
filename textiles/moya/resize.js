@@ -430,13 +430,16 @@ document.getElementById('cropToSquareBtn').addEventListener('click', () => {
             return temp;
         };
 
-        // 4. Process all three layers
-        const croppedBg = cropLayer(bgCanvas);
+        // 4. Process all three layers (an empty background stays empty)
+        const hasBg = bgCanvas.width > 0 && bgCanvas.height > 0;
         const croppedDraw = cropLayer(drawCanvas);
 
         // Update background
-        bgCanvas.width = size; bgCanvas.height = size;
-        bgCtx.drawImage(croppedBg, 0, 0);
+        if (hasBg) {
+            const croppedBg = cropLayer(bgCanvas);
+            bgCanvas.width = size; bgCanvas.height = size;
+            bgCtx.drawImage(croppedBg, 0, 0);
+        }
 
         // Update drawing
         drawCanvas.width = size; drawCanvas.height = size;
@@ -460,6 +463,69 @@ document.getElementById('cropToSquareBtn').addEventListener('click', () => {
 
             console.log(`Cropped to ${size}x${size} square (Offset X:${offsetX}, Y:${offsetY})`);
         };
-        resizedImg.src = bgCanvas.toDataURL();
+        // (a 0x0 background gives an image that never loads; use the chart)
+        resizedImg.src = (hasBg ? bgCanvas : drawCanvas).toDataURL();
     }
 });
+
+/** Expand to Square: grow the shorter side to match the longer one,
+    adding Color A stitches split evenly on both sides so the design stays
+    centered. A reference image gets the same (transparent) padding. **/
+function expandToSquare() {
+    if (!drawCanvas.width) return;
+
+    const w = drawCanvas.width;
+    const h = drawCanvas.height;
+    if (w === h) {
+        alert("Image is already square.");
+        return;
+    }
+
+    recordUndo('expand to square', { bg: true });
+
+    const size = Math.max(w, h);
+    const offsetX = Math.floor((size - w) / 2);
+    const offsetY = Math.floor((size - h) / 2);
+
+    // Copy a layer into a size x size canvas, centered; fill is the padding
+    const expandLayer = (oldCanvas, fill) => {
+        const temp = document.createElement('canvas');
+        const tCtx = temp.getContext('2d', { willReadFrequently: true });
+        temp.width = size;
+        temp.height = size;
+        tCtx.imageSmoothingEnabled = false;
+        if (fill) { tCtx.fillStyle = fill; tCtx.fillRect(0, 0, size, size); }
+        tCtx.drawImage(oldCanvas, offsetX, offsetY);
+        return temp;
+    };
+
+    // Drawing layer: white is Color A
+    const expandedDraw = expandLayer(drawCanvas, '#ffffff');
+    drawCanvas.width = size; drawCanvas.height = size;
+    drawCtx.drawImage(expandedDraw, 0, 0);
+
+    const hasBg = bgCanvas.width > 0 && bgCanvas.height > 0;
+    if (hasBg) {
+        const expandedBg = expandLayer(bgCanvas, null);
+        bgCanvas.width = size; bgCanvas.height = size;
+        bgCtx.drawImage(expandedBg, 0, 0);
+    }
+
+    displayCanvas.width = size; displayCanvas.height = size;
+
+    // Update the "Original" baseline for Revert, then reset view and UI
+    const expandedImg = new Image();
+    expandedImg.onload = () => {
+        originalImg = expandedImg;
+        resetView();
+        updateResizeInputs();
+        validationOutput = [];
+        validationStats = null;
+        setDirty(true);
+        render();
+        console.log(`Expanded to ${size}x${size} square (Offset X:${offsetX}, Y:${offsetY})`);
+    };
+    expandedImg.src = (hasBg ? bgCanvas : drawCanvas).toDataURL();
+}
+
+document.getElementById('expandToSquareBtn').addEventListener('click', expandToSquare);

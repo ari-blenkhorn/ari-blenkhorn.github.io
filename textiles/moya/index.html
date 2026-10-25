@@ -15,6 +15,7 @@
     <div class="sidebar" id="sidebar">
 		<div class="sidebar-header">
 		        <button id="aboutBtn" title="About MoYa" style="width: auto; background: #444;">ⓘ</button>
+		        <button id="shortcutsBtn" title="Keyboard shortcuts and mouse controls (?)" style="width: auto; background: #444;">⌨</button>
 				<button id="toggleFullscreen" title="Full screen" style="width: auto; background: #444;">⛶</button>
 				<button id="toggleSidebar" title="Hide the sidebar" style="width: auto; background: #444;">◀</button>
 
@@ -72,6 +73,7 @@
 					<button id="btnResizeChartToBG" style="background-color: #c36c0d; margin-top: 10px;" title="Make the chart the same size as the reference image; clears the chart (Ctrl+Z to undo)">Match Chart Size to Reference</button>
 					<button id="btnResizeBGToChart" style="background-color: #b35c0b; margin-top: 10px;" title="Resize the reference image to match the chart (work in progress)">Match Reference Size to Chart</button>
 					<button id="cropToSquareBtn" style="background-color: #d35400; margin-top: 10px;" title="Crop the chart and reference image to a centered square (Ctrl+Z to undo)">Crop to Square (Centered)</button>
+					<button id="expandToSquareBtn" style="background-color: #d35400; margin-top: 10px;" title="Add Color A rows or columns to make the chart square, keeping the design centered (Ctrl+Z to undo)">Expand to Square (Centered)</button>
 				</div>
 			</div>
 		</div>
@@ -122,7 +124,7 @@
         </div>
 
         <div class="sidebar-section collapsed">
-            <h2 class="section-toggle">Image Processing + Drawing <span class="arrow">▼</span></h2>
+            <h2 class="section-toggle">Image Processing + Validation <span class="arrow">▼</span></h2>
 			<div class="section-content">
 				<div style="display: flex; gap: 5px;">
 					Generate Chart from Source Image
@@ -169,80 +171,8 @@
 					<button id="smartRepairBtn" style="background-color: #f0ad4e; margin-top: 10px;" title="Fix invalid stitches automatically (Ctrl+Z to undo)">Repair Invalid Stitches</button>
 				</div>
 
-				<div style="display: flex; gap: 5px;">
-					Drawing
-				</div>
-				<div class="control-group">
-					<div style="display: flex; gap: 5px;">
-						<p style="font-size: 0.8rem; color: #aaa; margin-top: 10px;">
-						Click a stitch to toggle its color <br>
-						Click and drag to draw in Color B <br>
-						Ctrl+Z to undo, Ctrl+Y to redo <br>
-						Brush size sets how many stitches each click or drag covers
-					</p></div>
-					<label for="brushSize" title="How many stitches across each click or drag covers">Brush Size: <span id="brushVal">1</span>px</label>
-					<input type="range" id="brushSize" min="1" max="10" step="1" value="1" title="How many stitches across each click or drag covers">
-				</div>
-				<div class="control-group" style="display: flex; align-items: center; gap: 10px;">
-					<div style="flex: 1;">
-						<label for="symmetryMode" title="Mirror what you draw across the chart">Symmetry:</label>
-						<select id="symmetryMode" title="Mirror what you draw across the chart">
-							 <option value="none">Whole Image</option>
-							<option value="vertical">Mirror L/R</option>
-							<option value="horizontal">Mirror T/B</option>
-							<option value="4xMagic">Mirror Quadrants</option>
-							<option value="8xMagic">Mirror Octants</option>
-							<option value="4xITR">4x In-The-Round</option>
-							<option value="8xITR">8x In-The-Round </option>
-						</select>
-					</div>
-
-					<!-- Dynamic SVG Icon -->
-					<svg id="symmetryIcon" width="40" height="40" viewBox="0 0 40 40" style="background: #111; border: 1px solid #444; border-radius: 4px;">
-						<rect width="40" height="40" fill="none"/>
-						<line id="symV" x1="20" y1="0" x2="20" y2="40" stroke="#555" stroke-width="1"/>
-						<line id="symH" x1="0" y1="20" x2="40" y2="20" stroke="#555" stroke-width="1"/>
-						<line id="symD1" x1="0" y1="0" x2="40" y2="40" stroke="#555" stroke-width="1" style="display:none;"/>
-						<line id="symD2" x1="40" y1="0" x2="0" y2="40" stroke="#555" stroke-width="1" style="display:none;"/>
-					</svg>
-				</div>
 			</div>
         </div>
-
-		<div class="sidebar-section collapsed">
-			<h2 class="section-toggle">Navigation & Tools <span class="arrow">▼</span></h2>
-			<div class="section-content">
-				<p style="font-size: 0.8rem; color: #aaa; margin-top: 10px;">
-					Scroll or (I)n and (O)ut to Zoom <br>
-					Space + Drag to Pan
-				</p>
-				<button id="resetView" title="Fit the chart to the window. Zoom: I / O or mouse wheel. Pan: hold Space and drag, or drag with the middle button">Reset Zoom/Pan</button>
-			</div>
-        </div>
-
-		<div class="sidebar-section collapsed">
-			<h2 class="section-toggle">Display & Palette <span class="arrow">▼</span></h2>
-			<div class="section-content">
-				<label for="clearToColor">Clear Chart to...</label>
-				<div id="clearToColor" style="display: flex; gap: 5px; margin-top: 10px;">
-					<button id="clearTraceToABtn" style="background-color: #666; " title="Fill the whole chart with Color A (Ctrl+Z to undo)">Palette A </button>
-					<button id="clearTraceToBBtn" style="background-color: #666; " title="Fill the whole chart with Color B (Ctrl+Z to undo)">Palette B</button>
-				</div>
-				<div style="display: flex; gap: 15px; margin-top: 10px;">
-					<div style="display: flex;  gap: 5px; ">
-						Color A  <input type="color" id="colorAInput" value="#ffffff" title="Color A: background, and the color of a new chart (white by default)">
-					</div>
-					<div style="display: flex;  gap: 5px; ">
-						Color B  <input type="color" id="colorBInput" value="#000000" title="Color B: the drawing color (black by default)">
-					</div>
-				</div>
-				<div style="display: flex; gap: 5px; margin-top: 10px;">
-					<button id="swapPaletteBtn" style="background-color: #444; font-size: 0.8rem; margin: 10px 0;" title="Swap the display colors of A and B">Swap Palette Colors</button>
-
-					<button id="resetPaletteBtn" style="background-color: #444; font-size: 0.8rem; margin: 10px 0;" title="Set Color A back to white and Color B to black">Reset Palette to B&W</button>
-				</div>
-			</div>
-		</div>
 
 		<div class="section" style="border-bottom: none;">
 			<button id="factoryResetBtn"  title="Clear the chart, all settings, and undo history">Reset All Settings & Workspace</button>
@@ -258,35 +188,88 @@
                 <button id="redoBtn" class="ribbon-btn" disabled title="Nothing to redo (Ctrl+Y or Ctrl+Shift+Z)">&#8631; Redo</button>
             </div>
             <div class="ribbon-divider"></div>
-            <div class="ribbon-group">
-                <label title="Grid lines every few stitches"><input type="checkbox" id="showGrid" checked> Grid</label>
-                <label title="Outline every stitch"><input type="checkbox" id="showSubGrid" > Stitch grid</label>
+            <div class="ribbon-group mode-group">
+                <span class="mode-label" id="modeLabel">Mode:</span>
+                <div class="segmented" role="radiogroup" aria-labelledby="modeLabel">
+                    <button class="tool-btn active" data-tool="toggle" role="radio" aria-checked="true"
+                        title="Toggle mode (X): click flips a stitch between A and B; drag sets stitches to the color the first stitch flipped to">Toggle</button>
+                    <button class="tool-btn" data-tool="A" role="radio" aria-checked="false"
+                        title="Color A (A): click or drag sets stitches to Color A. Hold Alt for B"><span class="tool-swatch" id="toolSwatchA"></span>A</button>
+                    <button class="tool-btn" data-tool="B" role="radio" aria-checked="false"
+                        title="Color B (B): click or drag sets stitches to Color B. Hold Alt for A"><span class="tool-swatch" id="toolSwatchB"></span>B</button>
+                </div>
             </div>
             <div class="ribbon-divider"></div>
-            <div class="ribbon-group">
-                <label title="Stitch and row numbers"><input type="checkbox" id="showPixelRulers" checked> Stitch/Row Rulers</label>
-                <label title="Inch rulers, from your gauge"><input type="checkbox" id="showPhysicalRulers" > Physical Size Rulers</label>
+            <div class="ribbon-group menu-group">
+                <button id="drawMenuBtn" class="ribbon-btn menu-btn" aria-haspopup="true" aria-expanded="false"
+                    title="Brush size, symmetry, Colors A and B, and filling the chart">Draw &#9662;</button>
+                <div id="drawMenu" class="toolbar-menu hidden" role="menu" aria-label="Drawing options">
+                    <div class="menu-heading">Brush</div>
+                    <div class="menu-row">
+                        <label for="brushSize" title="How many stitches across each click or drag covers ([ and ])">Size: <span id="brushVal">1</span> stitch(es)</label>
+                        <input type="range" id="brushSize" min="1" max="10" step="1" value="1" title="How many stitches across each click or drag covers ([ and ])">
+                    </div>
+                    <div class="menu-heading">Symmetry</div>
+                    <div class="menu-row">
+                        <select id="symmetryMode" title="Mirror what you draw across the chart">
+                            <option value="none">Whole Image</option>
+                            <option value="vertical">Mirror L/R</option>
+                            <option value="horizontal">Mirror T/B</option>
+                            <option value="4xMagic">Mirror Quadrants</option>
+                            <option value="8xMagic">Mirror Octants</option>
+                            <option value="4xITR">4x In-The-Round</option>
+                            <option value="8xITR">8x In-The-Round</option>
+                        </select>
+                        <svg id="symmetryIcon" width="40" height="40" viewBox="0 0 40 40" style="background: #111; border: 1px solid #444; border-radius: 4px;">
+                        <rect width="40" height="40" fill="none"/>
+                        <line id="symV" x1="20" y1="0" x2="20" y2="40" stroke="#555" stroke-width="1"/>
+                        <line id="symH" x1="0" y1="20" x2="40" y2="20" stroke="#555" stroke-width="1"/>
+                        <line id="symD1" x1="0" y1="0" x2="40" y2="40" stroke="#555" stroke-width="1" style="display:none;"/>
+                        <line id="symD2" x1="40" y1="0" x2="0" y2="40" stroke="#555" stroke-width="1" style="display:none;"/>
+                        </svg>
+                    </div>
+                    <div class="menu-heading">Colors</div>
+                    <div class="menu-row">
+                        <label title="Color A (white by default); new charts start filled with it">Color A <input type="color" id="colorAInput" value="#ffffff" title="Color A (white by default); new charts start filled with it"></label>
+                        <label title="Color B (black by default)">Color B <input type="color" id="colorBInput" value="#000000" title="Color B (black by default)"></label>
+                    </div>
+                    <div class="menu-row">
+                        <button id="swapPaletteBtn" class="menu-cmd" title="Swap the display colors of A and B">Swap A &#8644; B colors</button>
+                        <button id="resetPaletteBtn" class="menu-cmd" title="Set Color A back to white and Color B to black">Reset to white/black</button>
+                    </div>
+                    <div class="menu-heading">Fill chart</div>
+                    <div class="menu-row">
+                        <button id="clearTraceToABtn" class="menu-cmd" title="Fill the whole chart with Color A (Ctrl+Z to undo)">All A</button>
+                        <button id="clearTraceToBBtn" class="menu-cmd" title="Fill the whole chart with Color B (Ctrl+Z to undo)">All B</button>
+                    </div>
+                </div>
             </div>
             <div class="ribbon-divider"></div>
-            <div class="ribbon-group">
-                <label title="Show stitches at their real shape, from your gauge"><input type="checkbox" id="usePhysicalAspect" >Non-square stitches</label>
+            <div class="ribbon-group menu-group">
+                <button id="displayMenuBtn" class="ribbon-btn menu-btn" aria-haspopup="true" aria-expanded="false"
+                    title="Grid, rulers, stitch shape, invalid stitches, and chart markings">Display &#9662;</button>
+                <div id="displayMenu" class="toolbar-menu hidden" role="menu" aria-label="Display options">
+                    <div class="menu-heading">Grid</div>
+                    <label title="Grid lines every few stitches"><input type="checkbox" id="showGrid" checked> Grid lines</label>
+                    <label title="Outline every stitch"><input type="checkbox" id="showSubGrid" > Stitch grid</label>
+                    <div class="menu-heading">Rulers</div>
+                    <label title="Stitch and row numbers"><input type="checkbox" id="showPixelRulers" checked> Stitch/Row rulers</label>
+                    <label title="Inch rulers, from your gauge"><input type="checkbox" id="showPhysicalRulers" > Physical size rulers</label>
+                    <div class="menu-heading">Chart</div>
+                    <label title="Show stitches at their real shape, from your gauge"><input type="checkbox" id="usePhysicalAspect" > Non-square stitches</label>
+                    <label title="Outline invalid stitches in red (V)"><input type="checkbox" id="showErrors" > Invalid stitches (V)</label>
+                    <div class="menu-row" title="Mark anchor stitches for knitting (up) or crochet (down)">
+                        <label for="markingsMode" title="Mark anchor stitches for knitting (up) or crochet (down)">Chart markings</label>
+                        <select id="markingsMode" title="Mark anchor stitches for knitting (up) or crochet (down)">
+                            <option value="none">None</option>
+                            <option value="up">Up (knit)</option>
+                            <option value="down">Down (crochet)</option>
+                        </select>
+                    </div>
+                    <div class="menu-heading">View</div>
+                    <button id="resetView" class="menu-cmd" title="Fit the chart to the window (F)">Fit chart to window (F)</button>
+                </div>
             </div>
-            <div class="ribbon-divider"></div>
-            <div class="ribbon-group">
-                <label title="Outline invalid stitches in red (V)"><input type="checkbox" id="showErrors" > Invalid Stitches (V)</label>
-            </div>
-            <div class="ribbon-divider"></div>
-            <div class="ribbon-group">
-
-				<label for="markingsMode" title="Mark anchor stitches for knitting (up) or crochet (down)">Chart Markings</label>
-                <select id="markingsMode" title="Mark anchor stitches for knitting (up) or crochet (down)">
-                    <option value="none">None</option>
-                    <option value="up">Up (knit)</option>
-					<option value="down">Down (crochet)</option>
-                </select>
-
-			</div>
-
             <div class="ribbon-divider"></div>
             <div class="ribbon-group">
 				<label for="viewMode" title="Show the chart, the reference image, or the chart over the reference (T toggles Trace)">View</label>
@@ -312,11 +295,70 @@
 				TODO/CBB - better hotkeys, for both -->
 			<button id="openSidebar" class="hidden" title="Show the sidebar">▶</button>
 			<button id="showRibbonBtn" class="hidden" title="Show the toolbar (H)">▼</button>
+
+			<!-- One-time drawing hint; hidden once dismissed or after the first edit -->
+			<div id="drawHint" class="draw-hint hidden" role="note">
+				<button id="drawHintClose" title="Dismiss">&times;</button>
+				<h3>How to draw</h3>
+				<ul>
+					<li><b>Click</b> a stitch to flip it between A and B</li>
+					<li><b>Drag</b> to set many stitches; pick the <b>Mode</b> (Toggle, A, or B) in the toolbar</li>
+					<li><b>Ctrl+Z</b> to undo, <b>Ctrl+Y</b> to redo</li>
+					<li>Press <b>?</b> for all shortcuts</li>
+				</ul>
+				<p>This disappears when you start drawing.</p>
+			</div>
+
+			<!-- Shown while a 4x/8x symmetry mode is on and the chart isn't square -->
+			<div id="symmetryWarning" class="sym-warning hidden" role="alert">
+				<span id="symmetryWarningText"></span>
+				<button id="symmetryExpandBtn" title="Add Color A rows or columns to make the chart square, keeping the design centered (Ctrl+Z to undo)">Expand to Square</button>
+				<button id="symmetryCropBtn" title="Crop the chart and reference image to a centered square (Ctrl+Z to undo)">Crop to Square</button>
+				<button id="symmetryWarningClose" class="sym-warning-close" title="Hide this message">&times;</button>
+			</div>
+
+			<!-- What a click and a drag will do, with the current brush and symmetry -->
+			<div id="statusLine" class="status-line" aria-live="polite"></div>
 		</div>
 	</div>
 </div>   <!-- end of "main-layout" -->
 
 
+
+	<!-- Keyboard Shortcuts Modal -->
+	<div id="shortcutsModal" class="modal-overlay hidden">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2>Shortcuts &amp; Mouse Controls</h2>
+				<span id="closeShortcuts" class="modal-close" title="Close (Esc)">&times;</span>
+			</div>
+			<div class="modal-body">
+				<table class="shortcuts-table">
+					<tr><th colspan="2">Drawing</th></tr>
+					<tr><td><kbd>X</kbd></td><td>Toggle tool: click flips a stitch between A and B; drag paints the color the first stitch flips to</td></tr>
+					<tr><td><kbd>A</kbd> / <kbd>B</kbd></td><td>Color A / Color B: click or drag sets stitches to that color</td></tr>
+					<tr><td><kbd>Alt</kbd> + click or drag</td><td>With Color A or Color B selected, use the other color</td></tr>
+					<tr><td><kbd>[</kbd> / <kbd>]</kbd></td><td>Smaller / larger brush (how many stitches each click or drag covers)</td></tr>
+					<tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo</td></tr>
+					<tr><td><kbd>Ctrl</kbd>+<kbd>Y</kbd> or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></td><td>Redo</td></tr>
+					<tr><th colspan="2">View</th></tr>
+					<tr><td>Mouse wheel, or <kbd>I</kbd> / <kbd>O</kbd></td><td>Zoom in / out</td></tr>
+					<tr><td>Hold <kbd>Space</kbd> and drag, or middle-button drag</td><td>Pan</td></tr>
+					<tr><td><kbd>F</kbd></td><td>Fit the chart to the window</td></tr>
+					<tr><td><kbd>T</kbd></td><td>Trace mode on/off (chart over reference image)</td></tr>
+					<tr><td><kbd>H</kbd></td><td>Hide / show the toolbar</td></tr>
+					<tr><th colspan="2">Chart</th></tr>
+					<tr><td><kbd>V</kbd></td><td>Validate: outline stitches that can't be worked in mosaic</td></tr>
+					<tr><th colspan="2">Help</th></tr>
+					<tr><td><kbd>?</kbd></td><td>Show this list</td></tr>
+					<tr><td><kbd>Esc</kbd></td><td>Close this list</td></tr>
+				</table>
+				<p style="font-size: 0.85rem; color: #999;">On a Mac, use <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd>.
+				Hover over any button or setting for a description.</p>
+			</div>
+			<button id="closeShortcutsBtn" style="background-color: #007acc; margin-top: 20px;">Close</button>
+		</div>
+	</div>
 
 	<!-- About Modal (Place this at the very bottom of body) -->
 	<div id="aboutModal" class="modal-overlay hidden">
@@ -350,7 +392,7 @@
 					Or set it in physical inches based on your personal row/stitch 
 					gauge in your chosen craft, and display with non-square stiches. Zoom and pan to see your chart easily.</li>
 				<li>To create your design, you can ... <br>
-					-- Click to toggle stitches, or click and drag to draw in Color B. Work one stitch at a time, or use a larger square "brush". <br>
+					-- Toggle stitches between Color A and Color B, or paint either color, by clicking or dragging. Work one stitch at a time, or use a larger square "brush". <br>
 					-- Create symmetric designs or mosaic-in-the-round by mirroring stitches from one drawing area to the rest of the image.<br>
 				    -- Import an existing bitmap as your chart, then modify it.<br>
 				    -- Import a background reference image, and draw over the reference image to create your chart.<br>
@@ -370,6 +412,7 @@
     <script src="render.js"></script>
     <script src="resize.js"></script>
     <script src="undo.js"></script>
+    <script src="help.js"></script>
     <script src="about.js"></script>
     <script src="imgProcessing.js"></script>
 	<script src="final.js"></script>

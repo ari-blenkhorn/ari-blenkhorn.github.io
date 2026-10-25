@@ -403,6 +403,8 @@ window.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
         return;
 	}
+    // ...or using a key combination (e.g. Ctrl+V to paste shouldn't validate)
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
 
     // 2. 'V' Key - Trigger Validation
     if (e.code === 'KeyV') {
@@ -438,6 +440,29 @@ window.addEventListener('keydown', (e) => {
         console.log(`View Mode toggled to: ${modeSelect.value}`);
     }
 	
+	// 'F' Key - Fit the chart to the window
+    if (e.code === 'KeyF') {
+        resetView();
+        render();
+    }
+
+	// Drawing mode: X = Toggle, A = Color A, B = Color B
+    if (e.code === 'KeyX') setDrawTool('toggle');
+    if (e.code === 'KeyA') setDrawTool('A');
+    if (e.code === 'KeyB') setDrawTool('B');
+
+	// '[' & ']' keys: smaller / larger brush (within the slider's range)
+    if (e.code === 'BracketLeft' || e.code === 'BracketRight') {
+        const step = e.code === 'BracketRight' ? 1 : -1;
+        const min = parseInt(brushSlider.min) || 1, max = parseInt(brushSlider.max) || 10;
+        const next = Math.max(min, Math.min(max, (parseInt(brushSlider.value) || 1) + step));
+        if (next !== parseInt(brushSlider.value)) {
+            brushSlider.value = next;
+            brushSlider.dispatchEvent(new Event('input'));  // label, status line
+            render();  // resize the preview outline
+        }
+    }
+
 	// 5. 'I' & 'O' keys for zoom In & Out
     if (e.code === 'KeyI') {
 		zoomFromCenter(1.1);
@@ -450,13 +475,13 @@ window.addEventListener('keydown', (e) => {
 	// N. Spacebar toggle
     if(e.code === 'Space') {  // Panning the view
         spacePressed = true;
-        canvas.style.cursor = 'grab';
+        updateCanvasCursor();
     }
 });
-window.addEventListener('keyup', (e) => { 
+window.addEventListener('keyup', (e) => {
     if(e.code === 'Space') {
         spacePressed = false;
-        canvas.style.cursor = 'crosshair';
+        updateCanvasCursor();
     }
 });
 
@@ -497,13 +522,14 @@ canvas.addEventListener('mousedown', (e) => {
     // Pan if: Space is held OR Middle Mouse Button is clicked
     if (spacePressed || e.button === 1) {
         isPanning = true;
-        canvas.style.cursor = 'grabbing';
+        updateCanvasCursor();
         lastMouse = { x: e.offsetX, y: e.offsetY };
     } else if (e.button === 0) {
-        // Start a possible stroke. If the mouse is released without
-        // leaving this stitch, it's a click (toggle); see finishStroke()
+        // Start a possible stroke; the drawing tool picks its color now.
+        // If the mouse is released without leaving this stitch, it's a
+        // click; see finishStroke()
         const p = eventStitch(e);
-        if (stitchInChart(p)) stroke = { start: p, last: p, dragged: false };
+        if (stitchInChart(p)) stroke = { start: p, last: p, dragged: false, value: strokeValue(p, e.altKey) };
     }
 });
 
@@ -525,17 +551,72 @@ window.addEventListener('mousemove', (e) => {
 
 window.addEventListener('mouseup', () => {
     isPanning = false;
-    canvas.style.cursor = spacePressed ? 'grab' : 'crosshair';
+    updateCanvasCursor();
     finishStroke();
 });
+
+// Canvas cursor: hand while panning (or ready to pan with Space held),
+// "not allowed" over stitches outside the active symmetry region, and a
+// crosshair everywhere else
+function updateCanvasCursor() {
+    let cursor = 'crosshair';
+    if (isPanning) cursor = 'grabbing';
+    else if (spacePressed) cursor = 'grab';
+    else {
+        const p = mouseImagePos;
+        if (p.x !== null && drawCanvas.width && stitchInChart(p) &&
+            !pixelInActiveDrawingArea(p.x, p.y, drawCanvas.width, drawCanvas.height)) {
+            cursor = 'not-allowed';
+        }
+    }
+    if (canvas.style.cursor !== cursor) canvas.style.cursor = cursor;
+}
+// The active region changes with the symmetry mode
+symSelect.addEventListener('change', updateCanvasCursor);
 
 
 /** 3. PIXEL LOGIC **/
 
-// Click-and-drag drawing. A press that is released on the same stitch
-// toggles it; moving to another stitch while pressed draws in the
-// foreground color (Color B) along the path, using the brush.
-let stroke = null; // { start, last, dragged } in stitch coordinates
+// Click-and-drag drawing with the current tool (see setDrawTool):
+//   Toggle:  a click flips the stitch between A and B; a drag paints the
+//            color the first stitch flipped to
+//   A / B:   a click or drag sets stitches to that color (Alt: the other)
+// Moving to another stitch while pressed paints along the path, using
+// the brush and symmetry.
+let stroke = null; // { start, last, dragged, value } in stitch coordinates
+
+// Drawing layer values: white (255) shows as Color A, black (0) as Color B
+const VALUE_A = 255;
+const VALUE_B = 0;
+const otherValue = (v) => (v === VALUE_A ? VALUE_B : VALUE_A);
+
+function stitchValue(x, y) {
+    const p = drawCtx.getImageData(x, y, 1, 1).data;
+    return (p[0] * 0.299 + p[1] * 0.587 + p[2] * 0.114) >= 128 ? VALUE_A : VALUE_B;
+}
+
+// The color a stroke starting on stitch p will paint
+function strokeValue(p, altKey) {
+    if (drawTool === 'toggle') return otherValue(stitchValue(p.x, p.y));
+    const v = drawTool === 'A' ? VALUE_A : VALUE_B;
+    return altKey ? otherValue(v) : v;
+}
+
+// Current drawing tool: 'toggle', 'A', or 'B'
+let drawTool = 'toggle';
+const toolButtons = document.querySelectorAll('.tool-btn');
+
+function setDrawTool(tool) {
+    drawTool = tool;
+    toolButtons.forEach(btn => {
+        const on = btn.dataset.tool === tool;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-checked', on);
+    });
+    if (typeof updateStatusLine === 'function') updateStatusLine();  // help.js
+}
+toolButtons.forEach(btn => btn.addEventListener('click', () => setDrawTool(btn.dataset.tool)));
+// (The A / B tool swatches follow the palette; see help.js)
 
 // Stitch under the mouse. Columns are drawn stretched by the
 // non-square-stitch aspect correction.
@@ -558,7 +639,7 @@ function continueStroke(p) {
     if (!stroke.dragged) {
         stroke.dragged = true;
         recordUndo('drawing');  // the whole stroke is one undo step
-        paintBrushAt(stroke.start.x, stroke.start.y, FOREGROUND_VALUE);
+        paintBrushAt(stroke.start.x, stroke.start.y, stroke.value);
     }
 
     let { x, y } = stroke.last;
@@ -569,7 +650,7 @@ function continueStroke(p) {
         const e2 = 2 * err;
         if (e2 >= dy) { err += dy; x += sx; }
         if (e2 <= dx) { err += dx; y += sy; }
-        paintBrushAt(x, y, FOREGROUND_VALUE);
+        paintBrushAt(x, y, stroke.value);
     }
     stroke.last = p;
     render();
@@ -580,10 +661,12 @@ function finishStroke() {
     const s = stroke;
     stroke = null;
     if (s.dragged) finishPixelEdit();  // validate once, at the end of the stroke
-    else handlePixelClick(s.start);
+    else handlePixelClick(s.start, s.value);
 }
 
-function handlePixelClick({ x: rawX, y: rawY }) {
+// Click: paint the brush area centered on the stitch in value (with the
+// Toggle tool, the opposite of what the stitch was)
+function handlePixelClick({ x: rawX, y: rawY }, value) {
      if (!drawCanvas.width) return;
 
     if (stitchInChart({ x: rawX, y: rawY })) {
@@ -597,8 +680,10 @@ function handlePixelClick({ x: rawX, y: rawY }) {
             r: p[0], g: p[1], b: p[2], a: p[3]
         };
 
-        recordUndo('stitch toggle');
-        togglePixelCommand(rawX, rawY, activePixel);
+        recordUndo(drawTool === 'toggle' ? 'stitch toggle' : 'painting');
+        paintBrushAt(rawX, rawY, value);
+        activePixel.r = activePixel.g = activePixel.b = value;
+        finishPixelEdit();
         render(); // Force a render to update the info box immediately
     }
 }
@@ -610,6 +695,7 @@ canvas.addEventListener('mousemove', (e) => {
 
     // Map screen mouse position to image coordinates
     mouseImagePos = eventStitch(e);
+    updateCanvasCursor();
 
     // Drawing a stroke? (If the button was released outside the window,
     // we never got the mouseup; end the stroke now.)
@@ -632,29 +718,6 @@ canvas.addEventListener('mouseleave', () => {
 brushSlider.addEventListener('input', () => {
     brushValDisplay.innerText = brushSlider.value;
 });
-
-// Drawing layer values: white (255) shows as Color A (background, what new
-// charts are filled with); black (0) shows as Color B (foreground).
-const FOREGROUND_VALUE = 0;
-
-// Click: toggle the stitch under the brush center, and paint the whole
-// brush area (with symmetry) in the opposite color
-function togglePixelCommand(x, y) {
-    // 1. Determine the target color based on the current state
-	// of the center brush pixel (click location)
-    const centerPixel = drawCtx.getImageData(x, y, 1, 1).data;
-    const centerLuminance = (centerPixel[0] * 0.299 + centerPixel[1] * 0.587 + centerPixel[2] * 0.114);
-    const targetValue = centerLuminance >= 128 ? 0 : 255;
-
-    paintBrushAt(x, y, targetValue);
-
-    // Update activePixel global for UI consistency
-    if (activePixel) {
-        activePixel.r = activePixel.g = activePixel.b = targetValue;
-    }
-
-    finishPixelEdit();
-}
 
 // Paint the brush area centered on (x, y), with symmetry, in targetValue
 // (0 or 255). Doesn't validate; call finishPixelEdit() when done.

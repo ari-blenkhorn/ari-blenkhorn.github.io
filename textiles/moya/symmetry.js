@@ -23,24 +23,27 @@ function pixelInActiveDrawingArea(tx, ty, w, h)
     if (! usingRotationSectors())
         return true;
 
-    // Center coords
+    // Same geometry as drawSymmetryMask: the center is (w/2, h/2) and the
+    // wedge edges run from the top corners to it. Test the stitch's center
+    // (not its top-left corner) so stitches that are mostly in the shaded
+    // area near the center point count as inactive.
     const cx = w / 2;
-    const cy = w / 2; // Using Width for both to ensure square logic
+    const cy = h / 2;
 
-    // Relative coords
-    const rx = tx - cx;
-    const ry = ty - cy;
+    // Stitch center, relative to the chart center, scaled so the
+    // diagonals to the corners are at 45 degrees (works for non-square charts)
+    const nx = (tx + 0.5 - cx) / cx;
+    const ny = (ty + 0.5 - cy) / cy;
 
     if ((symMode === "4xMagic") || (symMode === "4xITR")) {
-        // Only allow drawing if inside the TOP triangle
-        // ry < 0 == above center point
-        // rx <= abs(ry) == within 45-degree lines
-
-        if  (ry < 0 && Math.abs(rx) <= Math.abs(ry))
+        // Only allow drawing inside the TOP triangle:
+        // above the center (ny < 0) and between the diagonals (|nx| <= -ny)
+        if (ny < 0 && Math.abs(nx) <= -ny)
             return true;
     }
     else if ((symMode === "8xMagic") || (symMode === "8xITR")) {
-        if (ry < 0 && rx > 0 && (rx <= Math.abs(ry)))
+        // Right half of the top triangle
+        if (ny < 0 && nx > 0 && nx <= -ny)
             return true;
     }
 
@@ -50,56 +53,99 @@ function pixelInActiveDrawingArea(tx, ty, w, h)
 // For 4-way symmetric patterns
 
 function drawSymmetryMask(c, w, h) {
-		// Center coords
+	if (!usingRotationSectors()) return;
+
+	// Center coords
 	const cx = w / 2;
 	const cy = h / 2;
+	const symMode = symSelect.value;
+	const octant = (symMode === '8xITR') || (symMode === '8xMagic');
+	const px = 1 / viewState.scale;  // one screen pixel, in stitch units
 
-    c.save();
-    c.fillStyle = "rgba(0, 0, 0, 0.6)"; // Dark fade
+	// Inactive area: bottom, left, and right triangles, plus (octant
+	// modes) the left half of the top wedge
+	const inactive = new Path2D();
+	const tri = (ax, ay, bx, by) => { inactive.moveTo(ax, ay); inactive.lineTo(bx, by); inactive.lineTo(cx, cy); inactive.closePath(); };
+	tri(0, h, w, h);    // bottom
+	tri(0, 0, 0, h);    // left
+	tri(w, 0, w, h);    // right
+	if (octant) tri(0, 0, cx, 0);  // top-left half of the top wedge
 
-    const symMode = symSelect.value;
+	c.save();
 
-	if ( usingRotationSectors() )
-	{
-		// Bottom Triangle
-		c.beginPath();
-		c.moveTo(0, h); c.lineTo(w, h); c.lineTo(cx, cy);
-		c.fill();
+	// 1. Dark fade
+	c.fillStyle = "rgba(0, 0, 0, 0.6)";
+	c.fill(inactive);
 
-		// Left Triangle
-		c.beginPath();
-		c.moveTo(0, 0); c.lineTo(0, h); c.lineTo(cx, cy);
-		c.fill();
-
-		// Right Triangle
-		c.beginPath();
-		c.moveTo(w, 0); c.lineTo(w, h); c.lineTo(cx, cy);
-		c.fill();
-
-		//  Octant Mode only: Also mask the Top-Left half of the top wedge
-		if ( (symMode === '8xITR') || (symMode === '8xITRMagic') ) {
-            c.beginPath();
-            c.moveTo(0, 0);   // Top-Left corner
-            c.lineTo(cx, 0);  // Top-Center edge midpoint
-            c.lineTo(cx, cy); // Center point
-            c.fill();
-        }
+	// 2. Light diagonal hatch, so the inactive area also reads over dark stitches
+	c.clip(inactive);
+	c.beginPath();
+	const spacing = 8 * px;
+	for (let t = -h; t <= w; t += spacing) {
+		c.moveTo(t, 0);
+		c.lineTo(t + h, h);
 	}
+	c.strokeStyle = "rgba(255, 255, 255, 0.45)";
+	c.lineWidth = 1 * px;
+	c.stroke();
+	c.restore();
 
-    c.restore();
+	// 3. Thin bright outline around the active (drawable) region:
+	//    the top wedge, or its right half in octant modes
+	const active = new Path2D();
+	active.moveTo(octant ? cx : 0, 0);
+	active.lineTo(w, 0);
+	active.lineTo(cx, cy);
+	active.closePath();
+
+	c.save();
+	c.lineJoin = "round";
+	c.strokeStyle = "rgba(0, 0, 0, 0.8)";   // dark edge, for contrast on light stitches
+	c.lineWidth = 4 * px;
+	c.stroke(active);
+	c.strokeStyle = "#ffd84d";              // bright yellow
+	c.lineWidth = 2 * px;
+	c.stroke(active);
+	c.restore();
 }
 
 symSelect.addEventListener('change', () => {
     // 1. If 4xITR or 8xITR Symmetry is turned on, ensure the user knows it works best on a Square
-	const symMode = symSelect.value;
-    if ( ! usingRotationSectors()) return;
-	
-	else if (drawCanvas.width !== drawCanvas.height) {
-        console.warn("In-the-round symmetry mode active on a non-square canvas. Results may be offset.");
-    }
+	// (render() shows the warning banner via updateSymmetryWarning)
 
     // 2. Immediately redraw the canvas to show/hide the dark mask
     render();
+});
+
+// Rotation modes mirror strokes as if the chart were square. Show a
+// banner, with a Crop to Square button, while one is on and the chart
+// isn't square. Called from render(), so it follows resizes, crops, undo.
+const symmetryWarning = document.getElementById('symmetryWarning');
+// × hides the banner for this mode and chart size; it comes back if
+// either changes and the chart still isn't square
+let symmetryWarningDismissedFor = null;
+const symmetryWarningKey = () => `${symSelect.value}:${drawCanvas.width}x${drawCanvas.height}`;
+
+function updateSymmetryWarning() {
+    const w = drawCanvas.width, h = drawCanvas.height;
+    const show = usingRotationSectors() && w && h && w !== h &&
+                 symmetryWarningKey() !== symmetryWarningDismissedFor;
+    symmetryWarning.classList.toggle('hidden', !show);
+    if (show) {
+        const mode = symSelect.options[symSelect.selectedIndex].text.trim();
+        document.getElementById('symmetryWarningText').textContent =
+            `${mode} needs a square chart; this one is ${w}×${h}, so mirrored stitches won't line up.`;
+    }
+}
+document.getElementById('symmetryCropBtn').addEventListener('click', () => {
+    document.getElementById('cropToSquareBtn').click();  // asks to confirm
+});
+document.getElementById('symmetryExpandBtn').addEventListener('click', () => {
+    document.getElementById('expandToSquareBtn').click();
+});
+document.getElementById('symmetryWarningClose').addEventListener('click', () => {
+    symmetryWarningDismissedFor = symmetryWarningKey();
+    symmetryWarning.classList.add('hidden');
 });
 
 function drawSymmetryCenter(c, w, h) {
