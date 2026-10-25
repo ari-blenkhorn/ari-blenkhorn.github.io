@@ -18,18 +18,5 @@ closeAboutBtn.addEventListener('click', () => toggleAbout(false));
 
 // Close if user clicks the dark overlay outside the box
 aboutModal.addEventListener('click', (e) => {
-    if (e.target === aboutModal) {
-	    // 1. Show the About modal overlay
-		toggleAbout(false);
-	}
-
-	// 2. Retrieve the last saved time from the stored workspace
-    const saved = localStorage.getItem('imgEditorWorkspace');
-    if (saved) {
-        const data = JSON.parse(saved);
-        if (data.lastSaved) {
-            document.getElementById('lastSavedTime').innerText = data.lastSaved;
-        }
-    }
-
+    if (e.target === aboutModal) toggleAbout(false);
 });

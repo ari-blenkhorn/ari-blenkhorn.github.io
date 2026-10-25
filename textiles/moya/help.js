@@ -1,5 +1,6 @@
 /** ON-SCREEN HELP **/
-// Keyboard Shortcuts panel (? key or the ⌨ button), a one-time
+// Keyboard Shortcuts panel (? key or the ? button), User's Guide
+// (U key or the book button), a one-time
 // "how to draw" hint over the chart, and a status line showing what a
 // click and a drag will do with the current brush and symmetry.
 
@@ -29,6 +30,42 @@ window.addEventListener('keydown', (e) => {
         e.preventDefault();
     } else if (e.key === 'Escape' && !shortcutsModal.classList.contains('hidden')) {
         toggleShortcuts(false);
+    }
+});
+
+// --- User's Guide ---
+// Opened with the U key, the book button in the sidebar, and links in the
+// welcome note, shortcuts list, and About box (anything with data-open-guide).
+
+const guideModal = document.getElementById('guideModal');
+
+function toggleGuide(show) {
+    guideModal.classList.toggle('hidden', !show);
+}
+
+document.querySelectorAll('[data-open-guide]').forEach(el => {
+    el.addEventListener('click', () => {
+        toggleShortcuts(false);
+        toggleAbout(false);
+        if (el.closest('#drawHint')) dismissDrawHint();
+        toggleGuide(true);
+    });
+});
+document.getElementById('closeGuide').addEventListener('click', () => toggleGuide(false));
+document.getElementById('closeGuideBtn').addEventListener('click', () => toggleGuide(false));
+guideModal.addEventListener('click', (e) => {
+    if (e.target === guideModal) toggleGuide(false);  // click outside the box
+});
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !guideModal.classList.contains('hidden')) toggleGuide(false);
+
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.code === 'KeyU') {
+        toggleShortcuts(false);
+        toggleAbout(false);
+        toggleGuide(guideModal.classList.contains('hidden'));
     }
 });
 
@@ -103,19 +140,17 @@ function updateStatusLine() {
 
     let tool;
     if (drawTool === 'toggle') {
-        tool = `<b>Toggle mode</b>${sep}Click flips a stitch between A and B${sep}` +
-               `Drag sets stitches to the color the first one flips to`;
+        tool = `<b>Toggle mode</b>${sep}Click flips A/B${sep}Drag paints the first flip's color`;
     } else {
         const [me, other] = drawTool === 'A' ? ['A', 'B'] : ['B', 'A'];
         const meInput = drawTool === 'A' ? colorAInput : colorBInput;
-        tool = `<b>Color ${me}</b> ${swatch(meInput)}${sep}Click or drag sets stitches to Color ${me}${sep}` +
-               `<b>Alt</b> for Color ${other}`;
+        tool = `<b>Color ${me}</b> ${swatch(meInput)}${sep}Click/drag paints ${me}${sep}<b>Alt</b> paints ${other}`;
     }
 
     // Left: what drawing does now. Right: how to move around the chart.
     statusLine.innerHTML =
         `<span class="status-main"><span class="status-label">Drawing</span>${tool}${sep}` +
-        `Brush ${size}&times;${size} stitch${size > 1 ? 'es' : ''}${sep}${symText}</span>` +
+        `Brush ${size}&times;${size}${sep}${symText}</span>` +
         `<span class="status-nav"><span class="status-label">View</span>` +
         `<b>Wheel</b> or <b>I</b>/<b>O</b> zoom${sep}<b>Space</b>+drag pans${sep}` +
         `<b>F</b> fits${sep}<b>?</b> shortcuts</span>`;

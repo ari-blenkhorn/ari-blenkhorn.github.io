@@ -583,21 +583,11 @@ function drawValidationErrors(c,w,h) {
     validationOutput.forEach(err => {
         if (err.type === 'invalid') {
 
-            let drawMe = true;
-            if (usingRotationSectors())
-            {
-                // pixel must be in the active region
-                if (! pixelInActiveDrawingArea(err.x, err.y, w, h))
-                    drawMe = false;
-            }
-
-            if (drawMe)
-            {
-                // Outline Invalid Pixels in Red
-                c.strokeStyle = "red";
-                c.lineWidth = 1 / vs;
-                c.strokeRect(err.x, err.y, 1, 1);
-            }
+            // Validation reports only the stitches that need checking
+            // in the current symmetry mode, so outline them all in red
+            c.strokeStyle = "red";
+            c.lineWidth = 1 / vs;
+            c.strokeRect(err.x, err.y, 1, 1);
         } 
     });
 }
@@ -645,15 +635,16 @@ function drawChartMarkings(c,w,h) {
         else if (mm ==='up' && err.type === 'top-anchor')
         {
             // If this stitch is a top anchor, the stitch 2 rows down is a bottom anchor.
-            //console.log(`Up: mark ${xx} ${yy}+2 because ${xx} ${yy} is top anchor`);
+            // (dx, dy) is 2 rows down in the direction its rows run.
             drawMe = true;
-            yy = yy + 2;
+            xx = xx + (err.dx ?? 0);
+            yy = yy + (err.dy ?? 2);
             
         }
 
         // if we have an anchor, is it in the part of the image that's valid to draw?
         if (drawMe) {
-            if (usingRotationSectors())
+            if (validatesWedgeOnly())
             {
                 // pixel must be in the active region
                 if (! pixelInActiveDrawingArea(xx, yy, w, h))

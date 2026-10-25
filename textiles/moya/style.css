@@ -151,27 +151,46 @@ canvas:fullscreen {
     transform: translate(-50%, -50%);
     z-index: 900; /* below the toolbar (1000) and modals (2000) */
     box-sizing: border-box;
-    width: 420px;
+    width: 480px;
     max-width: calc(100% - 40px);
-    padding: 22px 28px 18px;
+    max-height: calc(100% - 100px); /* clear of the toolbar and status bar */
+    overflow-y: auto;
+    padding: 20px 28px 16px;
     background: rgba(20, 20, 20, 0.92);
     color: #eee;
     border: 2px solid #007acc;
     border-radius: 10px;
     box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-    font-size: 1.15rem;
-    line-height: 1.5;
+    font-size: 1rem;
+    line-height: 1.45;
 }
-.draw-hint h3 { margin: 0 0 10px; font-size: 1.4rem; color: #6cb6ff; }
+.draw-hint h3 { margin: 0 0 8px; font-size: 1.4rem; color: #6cb6ff; }
 .draw-hint ul { margin: 0; padding-left: 1.2em; }
-.draw-hint li { margin: 4px 0; }
-.draw-hint p { margin: 12px 0 0; font-size: 0.9rem; color: #999; }
-.draw-hint button {
+.draw-hint li { margin: 3px 0; }
+.draw-hint .hint-lead { margin: 10px 0 2px; color: #ccc; }
+.draw-hint .hint-lead:first-of-type { margin-top: 0; }
+.draw-hint .hint-foot { margin: 12px 0 0; font-size: 0.9rem; color: #aaa; }
+.draw-hint #drawHintClose {
     position: absolute; top: 8px; right: 10px;
     background: none; border: none; color: #aaa;
     font-size: 1.8rem; line-height: 1; cursor: pointer; padding: 0 4px;
 }
-.draw-hint button:hover { color: #fff; }
+.draw-hint #drawHintClose:hover { color: #fff; }
+
+/* A button that looks like a link, for "open the guide" in running text */
+.link-btn {
+    display: inline; width: auto; margin: 0; padding: 0;
+    background: none; border: none;
+    color: #6cb6ff; font: inherit; text-decoration: underline;
+    cursor: pointer;
+}
+.link-btn:hover { color: #a8d4ff; background: none; }
+
+/* Getting Started guide */
+.guide-content { width: 720px; }
+.guide-body h3 { margin: 18px 0 6px; color: #6cb6ff; font-size: 1.1rem; }
+.guide-body ul { margin: 0; padding-left: 1.2em; }
+.guide-body li { margin: 6px 0; }
 
 /* Non-square chart warning for 4x/8x symmetry, just below the toolbar */
 .sym-warning {
@@ -181,10 +200,13 @@ canvas:fullscreen {
     transform: translateX(-50%);
     z-index: 950; /* above the drawing hint and status strip, below the toolbar */
     display: flex;
+    flex-wrap: wrap; /* buttons drop below the message when narrow */
     align-items: center;
-    gap: 12px;
+    gap: 8px 12px;
+    box-sizing: border-box;
+    width: max-content; /* not squeezed by left: 50% */
     max-width: calc(100% - 40px);
-    padding: 8px 12px;
+    padding: 8px 36px 8px 12px; /* room for the × in the corner */
     background: #4a3600;
     color: #ffe9a8;
     border: 1px solid #c99a1a;
@@ -200,9 +222,11 @@ canvas:fullscreen {
     font-weight: 600; cursor: pointer;
 }
 .sym-warning button:hover { background: #e0b030; }
+#symmetryWarningText { flex: 1 1 260px; }
 .sym-warning .sym-warning-close {
+    position: absolute; top: 6px; right: 8px;
     background: none; color: #ffe9a8;
-    font-size: 1.3rem; line-height: 1; padding: 0 2px; margin-left: 2px;
+    font-size: 1.3rem; line-height: 1; padding: 0 2px;
 }
 .sym-warning .sym-warning-close:hover { background: none; color: #fff; }
 
@@ -228,8 +252,13 @@ canvas:fullscreen {
     text-overflow: ellipsis;
 }
 .status-line { display: flex; gap: 24px; }
-.status-line .status-main { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.status-line .status-nav { flex: 0 0 auto; }
+/* In a narrow window the Drawing part keeps its full width and the View
+   part gets whatever is left, cut short with an ellipsis */
+.status-line .status-main { flex: 0 0 auto; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.status-line .status-nav {
+    flex: 1 1 0; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; text-align: right;
+}
 .status-line .status-label {
     font-weight: 700;
     color: #8fd0ff;

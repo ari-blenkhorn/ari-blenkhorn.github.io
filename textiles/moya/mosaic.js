@@ -719,10 +719,33 @@ brushSlider.addEventListener('input', () => {
     brushValDisplay.innerText = brushSlider.value;
 });
 
+// The stitches a stitch at (x, y) is copied to under the current symmetry
+// mode, including (x, y) itself. Stitch x mirrors to (w - 1) - x, so the
+// first and last columns pair up. The rotation modes treat the chart as
+// square (w by w); copies that land off the chart are skipped by callers.
+function symmetricPoints(x, y, w, h) {
+    const xMax = w - 1;
+    const yMax = h - 1;
+    switch (symSelect.value) {
+        case 'vertical':   // Mirror L/R
+            return [[x, y], [xMax - x, y]];
+        case 'horizontal': // Mirror T/B
+            return [[x, y], [x, yMax - y]];
+        case '4xMagic':
+        case '4xITR':      // Rotations by 0, 90, 180 and 270 degrees
+            return [[x, y], [xMax - y, x], [xMax - x, xMax - y], [y, xMax - x]];
+        case '8xMagic':
+        case '8xITR':      // The 4 rotations plus their mirror images
+            return [[x, y], [xMax - y, x], [xMax - x, xMax - y], [y, xMax - x],
+                    [xMax - x, y], [y, x], [x, xMax - y], [xMax - y, xMax - x]];
+        default:
+            return [[x, y]];
+    }
+}
+
 // Paint the brush area centered on (x, y), with symmetry, in targetValue
 // (0 or 255). Doesn't validate; call finishPixelEdit() when done.
 function paintBrushAt(x, y, targetValue) {
-    const symMode = symSelect.value;
     const w = drawCanvas.width;
     const h = drawCanvas.height;
 
@@ -747,54 +770,7 @@ function paintBrushAt(x, y, targetValue) {
 			if (! pixelInActiveDrawingArea(tx, ty, w, h) )
                 continue;
 
-            if (symMode === 'none'){
-                paint(tx, ty);
-			} else {
-                // 1. Force the logic into a SQUARE based on the current width
-                // Center coords
-				const cx = w / 2;
-                const cy = w / 2; // Using Width for both to ensure square logic
-
-				// Relative coords
-                const rx = tx - cx;
-                const ry = ty - cy;
-
-			// 1. Mirror Vertical (Left-Right)
-                if (symMode === 'vertical') {
-                    paint(tx, ty);
-                    paint(w - tx, ty);
-                }
-                // 2. Mirror Horizontal (Top-Bottom)
-                else if (symMode === 'horizontal') {
-                    paint(tx, ty);
-                    paint(tx, h - ty);
-                }
-
-                // TODO/CBB - for now, apply same triangle logic for both 4x's
-                // Eventually - 4xMagic could be corner boxes rather than wedges
-				else if ((symMode === "4xMagic") || (symMode === "4xITR")) {
-					// Only allow drawing if inside the TOP triangle
-					// ry < 0 == above center point
-                    // rx <= abs(ry) == within 45-degree lines
-
-                    paint(tx, ty); // Bottom (Source)
-                    paint(h - tx, w - ty); // Top
-                    paint(ty, h - tx); // Right
-                    paint(w - ty, tx); // Left
-				}
-                // The 8x's are both the same 45-degree wedges
-				else if ( (symMode === '8xMagic') || (symMode === '8xITR') ){
-                    // Coordinates: (x,y), (-x,y), (x,-y), (-x,-y),
-                    //              (y,x), (-y,x), (y,-x), (-y,-x)
-                        const pts = [
-                            [cx + rx, cy + ry], [cx - rx, cy + ry], // Bottom
-                            [cx + rx, cy - ry], [cx - rx, cy - ry], // Top
-                            [cx + ry, cy + rx], [cx - ry, cy + rx], // Right
-                            [cx + ry, cy - rx], [cx - ry, cy - rx]  // Left
-                        ];
-                        pts.forEach(p => paint(Math.round(p[0]), Math.round(p[1])));
-				}
-            }
+            symmetricPoints(tx, ty, w, h).forEach(([px, py]) => paint(px, py));
         }
     }
 }
@@ -1286,17 +1262,20 @@ const symD2 = document.getElementById('symD2');
 symSelect.addEventListener('change', () => {
     const symMode = symSelect.value;
     // Update Icon Colors/Visibility
-	// Perpendiculars: one or the other for the mirror modes. Both for 4xMagic and the 8x's
+	// Perpendiculars: one or the other for the mirror modes. Both for 4x and the 8x's
     const hasVertical = (symMode === 'vertical') || (symMode === '4xMagic') || (symMode === '8xMagic') || (symMode === '8xITR');
     symV.style.stroke = hasVertical ? '#00ff00' : '#333';
 
     const hasHorizontal = (symMode === 'horizontal') || (symMode === '4xMagic') || (symMode === '8xMagic') || (symMode === '8xITR');
     symH.style.stroke = hasHorizontal ? '#00ff00' : '#333';
 
-	// Diagonals:  4xITR, and both 8x's
-    const hasDiagonals = (symMode === '4xITR') || (symMode === '8xITR') || (symMode === '4xITR')
+	// Diagonals: 4x In-The-Round, and both 8x's
+    const hasDiagonals = (symMode === '4xITR') || (symMode === '8xITR') || (symMode === '8xMagic');
     symD1.style.display = symD2.style.display = hasDiagonals ? 'block' : 'none';
     symD1.style.stroke = symD2.style.stroke = hasDiagonals ? '#00ff00' : '#333';
+
+    // Which stitches get validated depends on the mode
+    if (validationStats) validateBtn.click();
 
     render();
 });

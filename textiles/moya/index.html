@@ -15,7 +15,8 @@
     <div class="sidebar" id="sidebar">
 		<div class="sidebar-header">
 		        <button id="aboutBtn" title="About MoYa" style="width: auto; background: #444;">ⓘ</button>
-		        <button id="shortcutsBtn" title="Keyboard shortcuts and mouse controls (?)" style="width: auto; background: #444;">⌨</button>
+		        <button id="guideBtn" title="User's Guide (U)" style="width: auto; background: #444;" data-open-guide>&#128214;</button>
+		        <button id="shortcutsBtn" title="Keyboard shortcuts and mouse controls (?)" style="width: auto; background: #444;">?</button>
 				<button id="toggleFullscreen" title="Full screen" style="width: auto; background: #444;">⛶</button>
 				<button id="toggleSidebar" title="Hide the sidebar" style="width: auto; background: #444;">◀</button>
 
@@ -215,8 +216,8 @@
                             <option value="none">Whole Image</option>
                             <option value="vertical">Mirror L/R</option>
                             <option value="horizontal">Mirror T/B</option>
-                            <option value="4xMagic">Mirror Quadrants</option>
-                            <option value="8xMagic">Mirror Octants</option>
+                            <option value="4xMagic">4x</option>
+                            <option value="8xMagic">8x</option>
                             <option value="4xITR">4x In-The-Round</option>
                             <option value="8xITR">8x In-The-Round</option>
                         </select>
@@ -296,17 +297,24 @@
 			<button id="openSidebar" class="hidden" title="Show the sidebar">▶</button>
 			<button id="showRibbonBtn" class="hidden" title="Show the toolbar (H)">▼</button>
 
-			<!-- One-time drawing hint; hidden once dismissed or after the first edit -->
+			<!-- One-time welcome; hidden once dismissed or after the first edit.
+			     The full version is the User's Guide (guideModal). -->
 			<div id="drawHint" class="draw-hint hidden" role="note">
 				<button id="drawHintClose" title="Dismiss">&times;</button>
-				<h3>How to draw</h3>
+				<h3>Welcome to MoYa</h3>
+				<p class="hint-lead">Start a chart one of three ways (sidebar):</p>
 				<ul>
-					<li><b>Click</b> a stitch to flip it between A and B</li>
-					<li><b>Drag</b> to set many stitches; pick the <b>Mode</b> (Toggle, A, or B) in the toolbar</li>
-					<li><b>Ctrl+Z</b> to undo, <b>Ctrl+Y</b> to redo</li>
-					<li>Press <b>?</b> for all shortcuts</li>
+					<li><b>Blank:</b> set the size in <b>Chart Size/Gauge</b>, or draw on this one</li>
+					<li><b>Existing chart:</b> drop an image file here, or load it in <b>Load/Save</b></li>
+					<li><b>Picture:</b> load a <b>Reference Image</b> in <b>Load/Save</b>, then trace over it or convert it with <b>Image Processing</b></li>
 				</ul>
-				<p>This disappears when you start drawing.</p>
+				<p class="hint-lead">Then:</p>
+				<ul>
+					<li><b>Draw:</b> pick a <b>Mode</b> (Toggle, A, B) and click or drag; the <b>Draw</b> menu has brush, symmetry, and colors</li>
+					<li><b>Check:</b> press <b>V</b> to outline stitches that can't be worked in mosaic</li>
+					<li><b>Save:</b> as an image or PDF in <b>Load/Save</b></li>
+				</ul>
+				<p class="hint-foot">Open the <button class="link-btn" data-open-guide>User's Guide</button> anytime with <b>U</b> or the &#128214; button in the sidebar; <b>?</b> lists all shortcuts. Press <b>Ctrl+Z</b> to undo.</p>
 			</div>
 
 			<!-- Shown while a 4x/8x symmetry mode is on and the chart isn't square -->
@@ -351,12 +359,89 @@
 					<tr><td><kbd>V</kbd></td><td>Validate: outline stitches that can't be worked in mosaic</td></tr>
 					<tr><th colspan="2">Help</th></tr>
 					<tr><td><kbd>?</kbd></td><td>Show this list</td></tr>
+					<tr><td><kbd>U</kbd></td><td>User's Guide</td></tr>
 					<tr><td><kbd>Esc</kbd></td><td>Close this list</td></tr>
 				</table>
 				<p style="font-size: 0.85rem; color: #999;">On a Mac, use <kbd>Cmd</kbd> instead of <kbd>Ctrl</kbd>.
-				Hover over any button or setting for a description.</p>
+				Hover over any button or setting for a description.
+				New to MoYa? <button class="link-btn" data-open-guide>Read the User's Guide</button>.</p>
 			</div>
 			<button id="closeShortcutsBtn" style="background-color: #007acc; margin-top: 20px;">Close</button>
+		</div>
+	</div>
+
+	<!-- User's Guide: the full version of the welcome note. Opened with the U key,
+	     the book button in the sidebar, and links in the welcome note, shortcuts list, and About box. -->
+	<div id="guideModal" class="modal-overlay hidden">
+		<div class="modal-content guide-content">
+			<div class="modal-header">
+				<h2>User's Guide</h2>
+				<span id="closeGuide" class="modal-close" title="Close (Esc)">&times;</span>
+			</div>
+			<div class="modal-body guide-body">
+				<p>A mosaic chart has two colors, <b>A</b> and <b>B</b>. Each row is worked in one color, alternating
+				A and B from the first (bottom) row up. A stitch of the other color is a long stitch from the row below,
+				so it's only possible where the stitches above and below it are that color too.</p>
+
+				<h3>1. Start a chart</h3>
+				<ul>
+					<li><b>From scratch:</b> open <b>Chart Size/Gauge</b>, set the width and height in stitches and rows
+						(or in inches, from your gauge), and click <b>Create Blank Chart</b>. The chart starts all Color A.</li>
+					<li><b>From an existing chart:</b> drop an image file onto the chart area, or choose it under
+						<b>Load/Save &rarr; Chart / Drawing Layer</b>. Each pixel becomes one stitch, so a chart saved with
+						<b>Save Raw Image</b> loads back exactly.</li>
+					<li><b>From a picture:</b> choose it under <b>Load/Save &rarr; Reference Image</b>. MoYa makes a blank chart
+						the same size and switches the <b>View</b> to <b>Trace Mode</b>, showing your chart over the picture.
+						Set the size you want in <b>Chart Size/Gauge</b> and click <b>Resize All Layers</b>. Then either draw
+						over the picture, or open <b>Image Processing + Validation</b> and click <b>Threshold</b> (light areas
+						become A, dark areas B) or <b>Dither</b> (keeps shading as a pattern of dots).</li>
+				</ul>
+
+				<h3>2. Draw</h3>
+				<ul>
+					<li>Pick a <b>Mode</b> in the toolbar. <b>Toggle</b> (<kbd>X</kbd>) flips a clicked stitch between A and B;
+						a drag paints the color the first stitch flipped to. <b>A</b> (<kbd>A</kbd>) and <b>B</b> (<kbd>B</kbd>)
+						paint that color; hold <kbd>Alt</kbd> to paint the other one.</li>
+					<li>The <b>Draw</b> menu sets the brush size (<kbd>[</kbd> and <kbd>]</kbd>), the display colors of A and B,
+						and fills the whole chart with A or B.</li>
+					<li><b>Symmetry</b> (also in the <b>Draw</b> menu) copies what you draw across the chart.
+						<b>Mirror L/R</b> and <b>Mirror T/B</b> reflect it. <b>4x</b> and <b>8x</b> turn it into a rotationally
+						symmetric design that is worked in rows; validation checks the whole chart.
+						<b>4x In-The-Round</b> and <b>8x In-The-Round</b> are for work in the round, where every wedge is worked
+						the same way up, so only the drawing wedge is validated. The 4x and 8x modes need a square chart.</li>
+					<li>The bar at the bottom of the chart shows what a click or drag will do right now.</li>
+					<li><kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes and <kbd>Ctrl</kbd>+<kbd>Y</kbd> redoes any change.</li>
+				</ul>
+
+				<h3>3. Move around</h3>
+				<ul>
+					<li>The mouse wheel (or <kbd>I</kbd> / <kbd>O</kbd>) zooms; hold <kbd>Space</kbd> and drag to pan;
+						<kbd>F</kbd> fits the chart to the window. <kbd>?</kbd> lists every shortcut.</li>
+					<li>The <b>View</b> list switches between the chart, the reference picture, and Trace Mode (<kbd>T</kbd>).</li>
+					<li>The <b>Display</b> menu turns on grid lines, rulers, non-square stitches (from your gauge), and
+						chart markings.</li>
+				</ul>
+
+				<h3>4. Check that it can be worked</h3>
+				<ul>
+					<li>Press <kbd>V</kbd> (or <b>Validate Chart</b> in <b>Image Processing + Validation</b>). Stitches that can't
+						be worked in mosaic are outlined in red, and the counts appear under <b>Information</b>. It updates as
+						you draw.</li>
+					<li><b>First Row Color A</b> sets which color the first row is worked in.</li>
+					<li><b>Toggle All Invalid Stitches</b> flips every red stitch to its row's color.</li>
+					<li><b>Chart markings</b> in the <b>Display</b> menu mark the anchors of each long stitch, for knitting
+						(up) or crochet (down).</li>
+				</ul>
+
+				<h3>5. Save</h3>
+				<ul>
+					<li>In <b>Load/Save</b>: <b>Save Raw Image</b> (one pixel per stitch), <b>Save Chart As Image</b>,
+						or <b>Save Chart As PDF</b> for printing, with rulers and markings.</li>
+					<li>MoYa starts fresh each time it opens. To keep working on a chart later, save it with
+						<b>Save Raw Image</b> and load it again as an existing chart.</li>
+				</ul>
+			</div>
+			<button id="closeGuideBtn" style="background-color: #007acc; margin-top: 20px;">Close</button>
 		</div>
 	</div>
 
@@ -372,9 +457,7 @@
 				<div style="font-size: 8rem; text-align: center; margin-bottom: 20px;">🧶</div>
 				<!-- Update these manually when releasing new versions -->
 				<p><strong>App Version:</strong> <span id="appVersion">1.0</span></p>
-				<p><strong>Version Release Date:</strong> <span id="appVersion">27 April 2026</span></p>
-				<!-- Last Saved is updated automatically -->
-				<p><strong>Workspace Last Saved:</strong> <span id="lastSavedTime">Never</span></p>
+				<p><strong>Version Release Date:</strong> <span id="appReleaseDate">27 April 2026</span></p>
 				<p>MoYa ("Mosaic Yarncraft") is an application developed by Ari Rapkin Blenkhorn 
 					(<a href="mailto:ari@acm.org">ari@acm.org</a>)
 					to aid yarn-crafters  
@@ -385,19 +468,26 @@
 				    </p>
 				<p>
 					MoYa is a work in progress, under active development. Feedback is encouraged!
+					New to MoYa? <button class="link-btn" data-open-guide>Read the User's Guide</button>.
 				</p>
 				<b>Features:</b>
 				<ul>
-				<li>Set the size of your chart in stitches and rows, for a chart that can be used for any craft. 
-					Or set it in physical inches based on your personal row/stitch 
-					gauge in your chosen craft, and display with non-square stiches. Zoom and pan to see your chart easily.</li>
-				<li>To create your design, you can ... <br>
-					-- Toggle stitches between Color A and Color B, or paint either color, by clicking or dragging. Work one stitch at a time, or use a larger square "brush". <br>
-					-- Create symmetric designs or mosaic-in-the-round by mirroring stitches from one drawing area to the rest of the image.<br>
-				    -- Import an existing bitmap as your chart, then modify it.<br>
-				    -- Import a background reference image, and draw over the reference image to create your chart.<br>
-					-- Turn a reference image into a chart in one step with automatic algorithms such as threshholding and dithering.</li>
-				<li>Check whether your chart is valid for mosaic yarn-crafting. Visual feedback updates as you modify the design.</li>
+				<li>Set the size of your chart in stitches and rows, for a chart that can be used for any craft.
+					Or set it in physical inches based on your personal row/stitch
+					gauge in your chosen craft, and display with non-square stitches. Zoom and pan to see your chart easily.</li>
+				<li>Start your design in any of three ways:
+					<ul>
+					<li>Draw it from scratch on a blank chart.</li>
+					<li>Load an existing chart image, then modify it.</li>
+					<li>Load a reference picture, then trace over it, or turn it into a chart in one step with
+						thresholding or dithering.</li>
+					</ul></li>
+				<li>Draw by clicking or dragging: toggle stitches between Color A and Color B, or paint either color,
+					one stitch at a time or with a larger square brush. Undo and redo any change.</li>
+				<li>Create symmetric designs: mirror left/right or top/bottom, 4x or 8x rotational designs worked in rows,
+					or 4x or 8x mosaic-in-the-round, copying what you draw in one area to the rest of the chart.</li>
+				<li>Check whether your chart is valid for mosaic yarn-crafting. Invalid stitches are outlined as you draw,
+					and can be fixed in one step.</li>
 				<li>Display your chart in black and white (the default) or set your palette to reflect the actual yarns being used.</li>
 				<li>Save your chart as a simple pixel map. Or add row and stitch numbers, long-stitch markers, and row-color indicators, and save as image or PDF.</li>
 				</ul>

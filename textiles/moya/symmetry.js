@@ -9,6 +9,41 @@ function usingRotationSectors()
     else return false;
 }
 
+// 4x / 8x: a rotationally symmetric design worked in rows. Validation
+// covers the whole chart, one quadrant at a time.
+function validatesByQuadrant()
+{
+    const symMode = symSelect.value;
+    return (symMode === '4xMagic') || (symMode === '8xMagic');
+}
+
+// In the round: each wedge is worked the same way up, so validation
+// covers only the drawing wedge.
+function validatesWedgeOnly()
+{
+    const symMode = symSelect.value;
+    return (symMode === '4xITR') || (symMode === '8xITR');
+}
+
+// Which quadrant ('N', 'E', 'S' or 'W') a stitch's center is in, split
+// by the diagonals (the same geometry as the drawing wedge). Each quadrant
+// gets the stitches on one end of its diagonal edges, pinwheel fashion
+// (N gets the top-right half-diagonal, E the bottom-right, and so on), so
+// the split turns with the design and copies of a stitch are validated alike.
+function quadrantOf(tx, ty, w, h)
+{
+    const cx = w / 2;
+    const cy = h / 2;
+    const nx = (tx + 0.5 - cx) / cx;
+    const ny = (ty + 0.5 - cy) / cy;
+    const ax = Math.abs(nx);
+    const ay = Math.abs(ny);
+    if (ax < ay) return ny < 0 ? 'N' : 'S';
+    if (ax > ay) return nx > 0 ? 'E' : 'W';
+    if (nx >= 0) return ny <= 0 ? 'N' : 'E';
+    return ny > 0 ? 'S' : 'W';
+}
+
 function usingMirroring()
 {
     const symMode = symSelect.value;
