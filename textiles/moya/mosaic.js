@@ -831,6 +831,7 @@ revertBtn.addEventListener('click', () => {
 // --- Save Raw Image (The processed source data only) ---
 downloadImgBtn.addEventListener('click', () => {
     if (!drawCanvas.width) return;
+    if (!confirmSaveIfInvalid()) return;
 	
 	const usePhysical = document.getElementById('usePhysicalAspect').checked;
     const { pph, ppv } = appliedGauge();
@@ -864,37 +865,79 @@ downloadImgBtn.addEventListener('click', () => {
 // you happen to be using
 const EXPORT_STITCH_PX = 12;
 
-// Draw the chart onto a new canvas, with the overlays turned on in the
-// Display menu (grid lines, stitch grid, rulers, invalid stitches, chart
-// markings, non-square stitches). On-screen drawing aids (symmetry mask
-// and center, brush preview, reference image) are left out.
+// The part of the chart an export covers: the whole chart, or for
+// In-The-Round (wedgeOnly) the box around the drawing wedge.
+// inRegion(x, y) tells whether a stitch, in box coordinates, is exported.
+function exportRegion(wedgeOnly) {
+	const fullW = drawCanvas.width;
+	const fullH = drawCanvas.height;
+	let x0 = 0, y0 = 0, x1 = fullW, y1 = fullH;
+	let inChart = () => true;
+	if (wedgeOnly) {
+		inChart = (x, y) => pixelInActiveDrawingArea(x, y, fullW, fullH);
+		let bx0 = fullW, by0 = fullH, bx1 = 0, by1 = 0;
+		for (let y = 0; y < fullH; y++) for (let x = 0; x < fullW; x++) {
+			if (!inChart(x, y)) continue;
+			bx0 = Math.min(bx0, x); bx1 = Math.max(bx1, x + 1);
+			by0 = Math.min(by0, y); by1 = Math.max(by1, y + 1);
+		}
+		if (bx1 > bx0) { x0 = bx0; y0 = by0; x1 = bx1; y1 = by1; }
+		else inChart = () => true;  // no wedge: whole chart
+	}
+	return {
+		x0, y0, w: x1 - x0, h: y1 - y0,
+		inRegion: (x, y) => inChart(x + x0, y + y0),
+	};
+}
+
+// Space (in screen pixels, at EXPORT_STITCH_PX) around an exported piece
+// of the chart for what's drawn outside it: physical-size rulers on the
+// left and top, the row-color markers (one row tall, so a stitch wide) and
+// row numbers on the right, and the stitch numbers below. See drawRulers
+// and drawPhysicalSizeRulers.
+function exportMargins() {
+	const physical = physicalRulersToggle.checked;
+	return {
+		left: physical ? 70 : 25,   // a stitch number can be centered on the left edge
+		top: physical ? 45 : 15,
+		right: EXPORT_STITCH_PX + 50,
+		bottom: 40,
+	};
+}
+
+// Size in screen pixels of an exported piece w stitches by h rows
+function exportScreenSize(w, h) {
+	const m = exportMargins();
+	return {
+		w: w * EXPORT_STITCH_PX * aspectCorrectionX() + m.left + m.right,
+		h: h * EXPORT_STITCH_PX + m.top + m.bottom,
+	};
+}
+
+// Draw (part of) the chart onto a new canvas, with the overlays turned on
+// in the Display menu (grid lines, stitch grid, rulers, invalid stitches,
+// chart markings, non-square stitches). On-screen drawing aids (symmetry
+// mask and center, brush preview, reference image) are left out.
 //   k: device pixels per screen pixel; reduced if the canvas would be
 //      larger than browsers allow, or longer than maxSide pixels on a side
 //   print: black-and-white stitches and paper colors on white
 //          (otherwise the palette colors on the editor's dark background)
-//   wedgeOnly: just the drawing wedge (for In-The-Round charts), with its
-//          own rulers, numbered from its own right and bottom edges
-function renderChartForExport(k, { print = false, wedgeOnly = false, maxSide = Infinity } = {}) {
-	const fullW = drawCanvas.width;
+//   region: from exportRegion() (default: the whole chart)
+//   piece: {x0, y0, x1, y1}, the part of the region to draw (default: all
+//          of it). Rulers keep the region's numbering, so a piece shows the
+//          same stitch and row numbers it has in the whole.
+// The canvas's `layout` says where the piece landed: canvas pixels per
+// stitch (sx, sy) and the top-left corner of the stitches (left, top).
+function renderChartForExport(k, { print = false, region = exportRegion(false), piece = null, maxSide = Infinity } = {}) {
 	const fullH = drawCanvas.height;
 	const aspectCorrX = aspectCorrectionX();
-
-	// The stitches to draw, and the box around them
-	const inRegion = wedgeOnly ? (x, y) => pixelInActiveDrawingArea(x, y, fullW, fullH) : () => true;
-	let x0 = 0, y0 = 0, x1 = fullW, y1 = fullH;
-	if (wedgeOnly) {
-		x0 = fullW; y0 = fullH; x1 = 0; y1 = 0;
-		for (let y = 0; y < fullH; y++) for (let x = 0; x < fullW; x++) {
-			if (!inRegion(x, y)) continue;
-			x0 = Math.min(x0, x); x1 = Math.max(x1, x + 1);
-			y0 = Math.min(y0, y); y1 = Math.max(y1, y + 1);
-		}
-		if (x1 <= x0) { x0 = 0; y0 = 0; x1 = fullW; y1 = fullH; }  // no wedge: whole chart
-	}
-	const w = x1 - x0;
-	const h = y1 - y0;
-	// Is (x, y), in box coordinates, one of the stitches being drawn?
-	const inBox = (x, y) => inRegion(x + x0, y + y0);
+	const p = piece || { x0: 0, y0: 0, x1: region.w, y1: region.h };
+	const w = p.x1 - p.x0;
+	const h = p.y1 - p.y0;
+	// Is (x, y), in piece coordinates, one of the stitches being drawn?
+	const inPiece = (x, y) => region.inRegion(x + p.x0, y + p.y0);
+	// Stitches right of, and rows below, the piece, for numbering
+	const off = { x: region.w - p.x1, y: region.h - p.y1 };
 
 	// Lay out at the export zoom, in the chosen colors; restored below
 	const savedView = { ...viewState };
@@ -904,34 +947,32 @@ function renderChartForExport(k, { print = false, wedgeOnly = false, maxSide = I
 	const vs = viewState.scale;
 
 	try {
-		// Margins (in screen pixels) for what's drawn outside the chart:
-		// physical-size rulers on the left and top, the row-color markers
-		// (one row tall, so vs wide) and row numbers on the right, and the
-		// column numbers below. See drawRulers / drawPhysicalSizeRulers.
-		const physical = physicalRulersToggle.checked;
-		const marginL = physical ? 70 : 25;   // a column number can be centered on the left edge
-		const marginT = physical ? 45 : 15;
-		const marginR = vs + 50;
-		const marginB = 40;
-
-		const screenW = w * vs * aspectCorrX + marginL + marginR;
-		const screenH = h * vs + marginT + marginB;
+		const m = exportMargins();
+		const screen = exportScreenSize(w, h);
 		const MAX_SIDE = 16000, MAX_AREA = 100e6;
 		const side = Math.min(MAX_SIDE, maxSide);
-		k = Math.min(k, side / screenW, side / screenH, Math.sqrt(MAX_AREA / (screenW * screenH)));
+		k = Math.min(k, side / screen.w, side / screen.h, Math.sqrt(MAX_AREA / (screen.w * screen.h)));
+		// A whole number of pixels per stitch keeps the grid lines crisp
+		// (and the PNG small)
+		if (k * vs >= 1) k = Math.floor(k * vs) / vs;
 
 		const out = document.createElement('canvas');
-		out.width = Math.ceil(screenW * k);
-		out.height = Math.ceil(screenH * k);
+		out.width = Math.ceil(screen.w * k);
+		out.height = Math.ceil(screen.h * k);
+		out.layout = { k, left: m.left * k, top: m.top * k, sx: k * vs * aspectCorrX, sy: k * vs };
 		const c = out.getContext('2d');
 
 		c.imageSmoothingEnabled = false;
 		c.fillStyle = overlayColors.background;
 		c.fillRect(0, 0, out.width, out.height);
 
-		// Box coordinates: one unit per stitch, inside the margins
-		c.translate(marginL * k, marginT * k);
-		c.scale(k * vs * aspectCorrX, k * vs);
+		// Piece coordinates: one unit per stitch, inside the margins
+		c.translate(m.left * k, m.top * k);
+		c.scale(out.layout.sx, out.layout.sy);
+
+		// Whole-chart coordinates of the piece's top-left stitch
+		const cx0 = region.x0 + p.x0;
+		const cy0 = region.y0 + p.y0;
 
 		// Stitches: A white and B black for print, else the palette colors;
 		// stitches outside the wedge are left blank
@@ -940,32 +981,33 @@ function renderChartForExport(k, { print = false, wedgeOnly = false, maxSide = I
 		const part = document.createElement('canvas');
 		part.width = w; part.height = h;
 		const pc = part.getContext('2d');
-		pc.drawImage(src, x0, y0, w, h, 0, 0, w, h);
-		if (wedgeOnly) {
-			const id = pc.getImageData(0, 0, w, h);
-			for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-				if (!inBox(x, y)) id.data[(y * w + x) * 4 + 3] = 0;
-			}
-			pc.putImageData(id, 0, 0);
+		pc.drawImage(src, cx0, cy0, w, h, 0, 0, w, h);
+		const id = pc.getImageData(0, 0, w, h);
+		let partial = false;
+		for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+			if (!inPiece(x, y)) { id.data[(y * w + x) * 4 + 3] = 0; partial = true; }
 		}
+		if (partial) pc.putImageData(id, 0, 0);
 		c.drawImage(part, 0, 0);
 
-		// Grid over the whole box, so for a wedge the lines reach from the
+		// Grid over the whole piece, so for a wedge the lines reach from the
 		// bottom and right-hand rulers to every stitch
-		drawGrid(c, w, h);
+		drawGrid(c, w, h, off);
 
 		// Invalid stitches and markings: only over the stitches drawn
 		c.save();
-		if (wedgeOnly) {
-			const clip = new Path2D();
+		const clip = new Path2D();
+		if (partial) {
 			for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-				if (inBox(x, y)) clip.rect(x, y, 1, 1);
+				if (inPiece(x, y)) clip.rect(x, y, 1, 1);
 			}
-			c.clip(clip);
+		} else {
+			clip.rect(0, 0, w, h);
 		}
-		c.translate(-x0, -y0);                     // these use whole-chart coordinates
-		drawValidationErrors(c, fullW, fullH);    // red outlines, if shown
-		drawChartMarkings(c, fullW, fullH);       // anchor X's, if shown
+		c.clip(clip);
+		c.translate(-cx0, -cy0);                  // these use whole-chart coordinates
+		drawValidationErrors(c, drawCanvas.width, fullH);   // red outlines, if shown
+		drawChartMarkings(c, drawCanvas.width, fullH);      // anchor X's, if shown
 		c.restore();
 
 		// On paper, outline the stitches drawn so white ones at the edge show
@@ -974,23 +1016,23 @@ function renderChartForExport(k, { print = false, wedgeOnly = false, maxSide = I
 			c.lineWidth = 2 / vs;
 			c.beginPath();
 			for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-				if (!inBox(x, y)) continue;
-				if (y === 0 || !inBox(x, y - 1))     { c.moveTo(x, y);     c.lineTo(x + 1, y); }
-				if (y === h - 1 || !inBox(x, y + 1)) { c.moveTo(x, y + 1); c.lineTo(x + 1, y + 1); }
-				if (x === 0 || !inBox(x - 1, y))     { c.moveTo(x, y);     c.lineTo(x, y + 1); }
-				if (x === w - 1 || !inBox(x + 1, y)) { c.moveTo(x + 1, y); c.lineTo(x + 1, y + 1); }
+				if (!inPiece(x, y)) continue;
+				if (y === 0 || !inPiece(x, y - 1))     { c.moveTo(x, y);     c.lineTo(x + 1, y); }
+				if (y === h - 1 || !inPiece(x, y + 1)) { c.moveTo(x, y + 1); c.lineTo(x + 1, y + 1); }
+				if (x === 0 || !inPiece(x - 1, y))     { c.moveTo(x, y);     c.lineTo(x, y + 1); }
+				if (x === w - 1 || !inPiece(x + 1, y)) { c.moveTo(x + 1, y); c.lineTo(x + 1, y + 1); }
 			}
 			c.stroke();
 		}
 
-		// Row markers and rulers for the box. Row colors alternate from the
-		// chart's first (bottom) row, so a box that starts an odd number of
-		// rows up starts with the other color.
-		const rowsBelow = fullH - y1;
+		// Row markers and rulers. Row colors alternate from the chart's
+		// first (bottom) row, so a piece that starts an odd number of rows
+		// up starts with the other color.
+		const rowsBelow = fullH - (cy0 + h);
 		const bottomIsWhite = (rowsBelow % 2 === 0) === firstRowAToggle.checked;
 		drawRowCheckers(c, w, h, bottomIsWhite);
-		drawRulers(c, w, h);
-		if (physical) drawPhysicalSizeRulers(c, w, h);
+		drawRulers(c, w, h, off);
+		if (physicalRulersToggle.checked) drawPhysicalSizeRulers(c, w, h, off);
 		drawColumnSeparator(c, w, h);
 		return out;
 	} finally {
@@ -1001,6 +1043,7 @@ function renderChartForExport(k, { print = false, wedgeOnly = false, maxSide = I
 
 downloadChartImgBtn.addEventListener('click', () => {
     if (!drawCanvas.width) return;
+    if (!confirmSaveIfInvalid()) return;
 
     // 3 device pixels per screen pixel: 36 pixels per stitch
     const out = renderChartForExport(3);
@@ -1012,42 +1055,182 @@ downloadChartImgBtn.addEventListener('click', () => {
     link.click();
 });
 
-downloadChartPDFBtn.addEventListener('click', () => {
-	if (!drawCanvas.width) return;
+// --- PDF ---
 
-    if (validationStats && validationStats.invalid > 0)
-    {
-        if (! confirm("The chart has invalid pixels. Continue to export?"))
-            return;
-    }
+// Letter paper with half-inch margins; page headers sit in the top margin
+const PDF_MARGIN_MM = 12.7;
+// Smallest printed stitch (its height, in mm) before a chart is split
+// across pages
+const PDF_MIN_STITCH_MM = 2.5;
+
+// Printable area of a letter page, in mm
+function pdfPrintable(landscape) {
+	const pageW = landscape ? 279.4 : 215.9;
+	const pageH = landscape ? 215.9 : 279.4;
+	return { w: pageW - 2 * PDF_MARGIN_MM, h: pageH - 2 * PDF_MARGIN_MM };
+}
+
+// How to lay the region out on paper: on one page if its stitches can be
+// at least PDF_MIN_STITCH_MM tall, otherwise on pages of `per` stitches by
+// rows, at a scale of mmPerScreenPx. Picks whichever page orientation
+// needs fewer pages (or, for one page, gives bigger stitches).
+function planPdfPages(region) {
+	const best = [true, false].map(landscape => {
+		const area = pdfPrintable(landscape);
+		const whole = exportScreenSize(region.w, region.h);
+		const fit = Math.min(area.w / whole.w, area.h / whole.h);  // mm per screen px
+		if (fit * EXPORT_STITCH_PX >= PDF_MIN_STITCH_MM) {
+			return { landscape, pages: 1, stitchMM: fit * EXPORT_STITCH_PX, mmPerScreenPx: fit };
+		}
+		// Stitches across and rows down that fit at the smallest stitch size,
+		// rounded down to tens so page edges fall on the grid lines
+		const mmPerScreenPx = PDF_MIN_STITCH_MM / EXPORT_STITCH_PX;
+		const m = exportMargins();
+		const across = Math.floor((area.w / mmPerScreenPx - m.left - m.right) / (EXPORT_STITCH_PX * aspectCorrectionX()));
+		const down = Math.floor((area.h / mmPerScreenPx - m.top - m.bottom) / EXPORT_STITCH_PX);
+		const tens = (n) => n >= 10 ? Math.floor(n / 10) * 10 : Math.max(1, n);
+		const per = { x: tens(across), y: tens(down) };
+		const pages = Math.ceil(region.w / per.x) * Math.ceil(region.h / per.y);
+		// Scale so a full page of stitches fits
+		const full = exportScreenSize(per.x, per.y);
+		return { landscape, pages, per, mmPerScreenPx: Math.min(area.w / full.w, area.h / full.h) };
+	});
+	const [l, p] = best;
+	if (l.pages !== p.pages) return l.pages < p.pages ? l : p;
+	return (l.pages === 1 && p.stitchMM > l.stitchMM) ? p : l;
+}
+
+// The pieces of the region, one per page, numbered from the bottom right
+// (stitch 1, row 1): right to left along the bottom, then up a row of
+// pages, like the knitting. Pieces with no stitches to print are skipped.
+function pdfPieces(region, per) {
+	const pieces = [];
+	for (let rowsBelow = 0; rowsBelow < region.h; rowsBelow += per.y) {
+		for (let stitchesRight = 0; stitchesRight < region.w; stitchesRight += per.x) {
+			const piece = {
+				x0: Math.max(0, region.w - stitchesRight - per.x), x1: region.w - stitchesRight,
+				y0: Math.max(0, region.h - rowsBelow - per.y),     y1: region.h - rowsBelow,
+			};
+			let any = false;
+			for (let y = piece.y0; y < piece.y1 && !any; y++) for (let x = piece.x0; x < piece.x1; x++) {
+				if (region.inRegion(x, y)) { any = true; break; }
+			}
+			if (any) pieces.push(piece);
+		}
+	}
+	return pieces;
+}
+
+// Put a rendered canvas on the current PDF page: at the top of the
+// printable area (below `below` mm of header), centered across, at
+// mmPerScreenPx (or shrunk to fit)
+function pdfPlaceCanvas(pdf, out, mmPerScreenPx, below = 0) {
+	const pageW = pdf.internal.pageSize.getWidth();
+	const pageH = pdf.internal.pageSize.getHeight();
+	// mm per canvas pixel
+	const scale = Math.min(mmPerScreenPx / out.layout.k,
+	                       (pageW - 2 * PDF_MARGIN_MM) / out.width,
+	                       (pageH - 2 * PDF_MARGIN_MM - below) / out.height);
+	const wMM = out.width * scale;
+	const hMM = out.height * scale;
+	// PNG data is compressed losslessly ('FAST' is the deflate level), so
+	// the stitches stay pixel-perfect without an enormous file
+	pdf.addImage(out.toDataURL('image/png'), 'PNG', (pageW - wMM) / 2, PDF_MARGIN_MM + below, wMM, hMM, undefined, 'FAST');
+}
+
+downloadChartPDFBtn.addEventListener('click', async () => {
+	if (!drawCanvas.width) return;
+    if (!confirmSaveIfInvalid()) return;
 
     const { jsPDF } = window.jspdf;
 
+    // Printed in black and white on white, whatever the palette; for
+    // In-The-Round, just the wedge that is worked
+    const region = exportRegion(validatesWedgeOnly());
+    const plan = planPdfPages(region);
+    const pdf = new jsPDF({ orientation: plan.landscape ? 'l' : 'p', unit: 'mm', format: 'letter' });
+
     // 3 device pixels per screen pixel (36 pixels per stitch), but no more
-    // than about 400 dpi across the 10-inch printable width: sharp in print,
-    // and quick to build. Printed in black and white on white, whatever the
-    // palette; for In-The-Round, just the wedge that is worked.
-    const out = renderChartForExport(3, { print: true, wedgeOnly: validatesWedgeOnly(), maxSide: 4000 });
-    const imgData = out.toDataURL("image/png");
+    // than about 300 dpi across the printable width (200 dpi for a chart
+    // split across pages, whose stitches are bigger): sharp in print, and
+    // quick to build. Most of the time goes to jsPDF reading each image.
+    const dpi = plan.pages === 1 ? 300 : 200;
+    const maxSide = Math.round(pdfPrintable(plan.landscape).w / 25.4 * dpi);
+    const opts = { print: true, region, maxSide };
 
-    // Letter paper, turned to suit the chart, with margins a printer can handle
-    const landscape = out.width > out.height;
-    const pdf = new jsPDF({ orientation: landscape ? 'l' : 'p', unit: 'mm', format: 'letter' });
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-    const margin = 12.7;  // half an inch
+    if (plan.pages === 1) {
+        pdfPlaceCanvas(pdf, renderChartForExport(3, opts), plan.mmPerScreenPx);
+        pdf.save(`full-chart-${new Date().getTime()}.pdf`);
+        return;
+    }
 
-    // Fit the chart in the printable area, keeping its shape;
-    // centered across the page, at the top
-    const fit = Math.min((pageW - 2 * margin) / out.width, (pageH - 2 * margin) / out.height);
-    const wMM = out.width * fit;
-    const hMM = out.height * fit;
+    // Split across pages: an overview of the whole chart showing where
+    // each page goes, then one page per piece, all at the same scale.
+    // This takes a while for a big chart, so show progress on the button
+    // and let the page update between pages.
+    const pieces = pdfPieces(region, plan.per);
+    const label = downloadChartPDFBtn.textContent;
+    const progress = (text) => new Promise(resolve => {
+        downloadChartPDFBtn.textContent = text;
+        setTimeout(resolve, 0);
+    });
+    downloadChartPDFBtn.disabled = true;
 
-    // PNG data is compressed losslessly ('FAST' is the deflate level), so
-    // the stitches stay pixel-perfect without an enormous file
-    pdf.addImage(imgData, 'PNG', (pageW - wMM) / 2, margin, wMM, hMM, undefined, 'FAST');
+    try {
+        const header = (text) => {
+            pdf.setFontSize(10);
+            pdf.setTextColor(0);
+            pdf.text(text, PDF_MARGIN_MM, PDF_MARGIN_MM - 4);
+        };
+        const range = (a, b) => (a === b ? `${a}` : `${a}–${b}`);
 
-    pdf.save(`full-chart-${new Date().getTime()}.pdf`);
+        // Overview: the whole chart shrunk onto one page, at 300 dpi so its
+        // smaller stitches and numbers stay sharp
+        await progress(`Saving PDF: overview`);
+        const overview = renderChartForExport(3, { ...opts, maxSide: Math.round(pdfPrintable(plan.landscape).w / 25.4 * 300) });
+        const L = overview.layout;
+        const oc = overview.getContext('2d');
+        const frame = Math.max(2, L.sy * 0.25);
+        oc.save();
+        oc.setTransform(1, 0, 0, 1, 0, 0);  // canvas pixels (layout), not chart units
+        oc.textAlign = 'center';
+        oc.textBaseline = 'middle';
+        pieces.forEach((pc, i) => {
+            const x = L.left + pc.x0 * L.sx, y = L.top + pc.y0 * L.sy;
+            const w = (pc.x1 - pc.x0) * L.sx, h = (pc.y1 - pc.y0) * L.sy;
+            oc.lineWidth = frame;
+            oc.strokeStyle = '#0050c8';
+            oc.strokeRect(x, y, w, h);
+            // Page number, outlined in white so it reads over the stitches
+            const size = Math.min(w, h) * 0.35;
+            oc.font = `bold ${size}px sans-serif`;
+            oc.lineWidth = size * 0.12;
+            oc.strokeStyle = '#ffffff';
+            oc.strokeText(`${i + 1}`, x + w / 2, y + h / 2);
+            oc.fillStyle = '#0050c8';
+            oc.fillText(`${i + 1}`, x + w / 2, y + h / 2);
+        });
+        oc.restore();
+        header(`Overview: ${region.w} stitches × ${region.h} rows, printed on the ${pieces.length} pages ` +
+               `that follow. Page 1 is the bottom right (stitch 1, row 1).`);
+        pdfPlaceCanvas(pdf, overview, Infinity, 2);
+
+        // One page per piece
+        for (let i = 0; i < pieces.length; i++) {
+            const pc = pieces[i];
+            await progress(`Saving PDF: page ${i + 1} of ${pieces.length}`);
+            pdf.addPage('letter', plan.landscape ? 'l' : 'p');
+            header(`Page ${i + 1} of ${pieces.length}:  stitches ${range(region.w - pc.x1 + 1, region.w - pc.x0)},  ` +
+                   `rows ${range(region.h - pc.y1 + 1, region.h - pc.y0)}`);
+            pdfPlaceCanvas(pdf, renderChartForExport(3, { ...opts, piece: pc }), plan.mmPerScreenPx);
+        }
+
+        await progress(`Saving PDF…`);
+        pdf.save(`full-chart-${new Date().getTime()}.pdf`);
+    } finally {
+        downloadChartPDFBtn.textContent = label;
+        downloadChartPDFBtn.disabled = false;
+    }
 });
 
 

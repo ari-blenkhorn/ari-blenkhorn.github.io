@@ -405,7 +405,19 @@ function currentScale(ctx) {
 	return cs;
 }
 
-function drawGrid(c,w,h) {
+// First multiple of step past offset: where numbering resumes on a piece
+// of the chart that has `offset` stitches (or rows) beyond its edge
+function firstMultipleAfter(offset, step) {
+	return (Math.floor(offset / step) + 1) * step;
+}
+
+// The grid, rulers, and physical rulers below all number stitches from the
+// right edge and rows from the bottom. off.x and off.y are how many stitches
+// lie to the right of, and rows below, the area being drawn (for one page of
+// a chart split across pages); both are 0 for the whole chart.
+const NO_OFFSET = { x: 0, y: 0 };
+
+function drawGrid(c, w, h, off = NO_OFFSET) {
 	if (!drawCanvas.width) return;
 
 	// Dynamic step: ensures we don't crowd the screen with numbers
@@ -422,8 +434,12 @@ function drawGrid(c,w,h) {
     }
     if (gridToggle.checked) {
         c.beginPath(); c.strokeStyle = overlayColors.grid; c.lineWidth = 2/vs;
-        for(let x=step; x<=w; x+=step) { c.moveTo(w-x,0); c.lineTo(w-x,h); }
-        for(let y=step; y<=h; y+=step) { c.moveTo(0,h-y); c.lineTo(w,h-y); }
+        for (let n = firstMultipleAfter(off.x, step); n <= off.x + w; n += step) {
+            const x = w - (n - off.x); c.moveTo(x, 0); c.lineTo(x, h);
+        }
+        for (let n = firstMultipleAfter(off.y, step); n <= off.y + h; n += step) {
+            const y = h - (n - off.y); c.moveTo(0, y); c.lineTo(w, y);
+        }
         c.stroke();
     }
 }
@@ -433,7 +449,7 @@ const pixelRulerToggle = document.getElementById('showPixelRulers');
 pixelRulerToggle.addEventListener('change', render);
 
 
-function drawRulers(c,w,h) {
+function drawRulers(c, w, h, off = NO_OFFSET) {
 	if (!drawCanvas.width) return;
 	if (!pixelRulerToggle.checked) return; 
 
@@ -463,13 +479,13 @@ function drawRulers(c,w,h) {
     // Hang labels from their top edge, a small gap below the tick, so the
     // tick never runs into the digits
     c.textBaseline = "top";
-    for (let dx = stepX; dx <= w; dx += stepX) {
-        const rx = w - dx;
+    for (let n = firstMultipleAfter(off.x, stepX); n <= off.x + w; n += stepX) {
+        const rx = w - (n - off.x);
         c.beginPath();
         c.moveTo(rx, h);
         c.lineTo(rx, h + tickSize);
         c.stroke();
-        fillTextScreen(c, dx, rx, h + tickSize + (3 / vs), font);
+        fillTextScreen(c, n, rx, h + tickSize + (3 / vs), font);
     }
 
     // --- Vertical Ruler (Right - BTT) ---
@@ -480,8 +496,8 @@ function drawRulers(c,w,h) {
     const labelX = tickEnd + (4 / vs) / ax;
     c.textAlign = "left";
     c.textBaseline = "middle";
-    for (let dy = stepY; dy <= h; dy += stepY) {
-        const ry = h - dy;
+    for (let n = firstMultipleAfter(off.y, stepY); n <= off.y + h; n += stepY) {
+        const ry = h - (n - off.y);
 
         c.beginPath();
         // Start tick at the image edge (w)
@@ -491,12 +507,12 @@ function drawRulers(c,w,h) {
         c.stroke();
 
         // Position label just past the tick, centered on it
-        fillTextScreen(c, dy, labelX, ry, font);
+        fillTextScreen(c, n, labelX, ry, font);
     }
     c.textBaseline = "alphabetic";
 }
 
-function drawPhysicalSizeRulers(c,w,h) {
+function drawPhysicalSizeRulers(c, w, h, off = NO_OFFSET) {
 	if (!drawCanvas.width) return;
 
 	const cs = currentScale(c);
@@ -524,8 +540,9 @@ function drawPhysicalSizeRulers(c,w,h) {
 
     // Draw Ticks (Bottom-to-Top orientation)
     // We loop through inches (increments of 'step')
-    for (let inch = step; inch * ppv <= h; inch += step) {
-        const rawY = (h - 1) - (inch * ppv);
+    for (let inch = step; inch * ppv <= off.y + h; inch += step) {
+        if (inch * ppv <= off.y) continue;  // below this piece
+        const rawY = (h - 1) - (inch * ppv - off.y);
         const isMajor = inch % 1 === 0;
         const tickWidth = (isMajor ? 25 : 12) / vs / ax;
 
@@ -542,9 +559,10 @@ function drawPhysicalSizeRulers(c,w,h) {
     // --- 2. HORIZONTAL RULER (Top Side - RTL) ---
     c.textAlign = "center";
     c.textBaseline = "bottom";
-    for (let inch = step; inch * pph <= w; inch += step) {
+    for (let inch = step; inch * pph <= off.x + w; inch += step) {
+        if (inch * pph <= off.x) continue;  // right of this piece
         // Since the image is RTL, 0 inches is at the far right (w)
-        const rawX = w - (inch * pph);
+        const rawX = w - (inch * pph - off.x);
         const isMajor = inch % 1 === 0;
         const tickHeight = (isMajor ? 25 : 12) / vs;
 

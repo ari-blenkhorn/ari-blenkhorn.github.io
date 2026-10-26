@@ -81,9 +81,10 @@ function validateRows(dir, isWhite, w, h, bottomIsWhite, include, out, counts) {
     }
 }
 
-validateBtn.addEventListener('click', () => {
-    if (!drawCanvas.width) return;
-
+// Check the whole chart (or, In-The-Round, the drawing wedge) under the
+// current symmetry mode. Returns the marked stitches and the counts,
+// without changing what's shown.
+function checkChart() {
     const w = drawCanvas.width;
     const h = drawCanvas.height;
     const d = drawCtx.getImageData(0, 0, w, h).data;
@@ -94,7 +95,7 @@ validateBtn.addEventListener('click', () => {
         return (d[i] * 0.299 + d[i+1] * 0.587 + d[i+2] * 0.114) >= 128;
     };
 
-    validationOutput = [];
+    const output = [];
     const counts = { total: 0, invalid: 0, topAnchor: 0 };
 
     if (validatesByQuadrant()) {
@@ -103,16 +104,37 @@ validateBtn.addEventListener('click', () => {
         const dirs = { N: 'up', S: 'down', E: 'right', W: 'left' };
         for (const q in dirs) {
             validateRows(dirs[q], isWhite, w, h, bottomIsWhite,
-                         (x, y) => quadrantOf(x, y, w, h) === q, validationOutput, counts);
+                         (x, y) => quadrantOf(x, y, w, h) === q, output, counts);
         }
     } else if (validatesWedgeOnly()) {
         // In the round: every wedge is worked the same way up, so only the
         // drawing wedge needs checking
         validateRows('up', isWhite, w, h, bottomIsWhite,
-                     (x, y) => pixelInActiveDrawingArea(x, y, w, h), validationOutput, counts);
+                     (x, y) => pixelInActiveDrawingArea(x, y, w, h), output, counts);
     } else {
-        validateRows('up', isWhite, w, h, bottomIsWhite, () => true, validationOutput, counts);
+        validateRows('up', isWhite, w, h, bottomIsWhite, () => true, output, counts);
     }
+    return { output, counts };
+}
+
+// Before saving: if the chart has stitches that can't be worked in mosaic,
+// ask whether to save anyway. Checks the chart afresh, whether or not
+// it has been validated or the invalid stitches are shown. Returns true
+// to go ahead.
+function confirmSaveIfInvalid() {
+    if (!drawCanvas.width) return true;
+    const { invalid } = checkChart().counts;
+    if (invalid === 0) return true;
+    const where = validatesWedgeOnly() ? 'the drawing wedge' : 'this chart';
+    return confirm(`${invalid} stitch${invalid === 1 ? '' : 'es'} in ${where} can't be worked in mosaic ` +
+                   `(Validate, or press V, to see them). Save anyway?`);
+}
+
+validateBtn.addEventListener('click', () => {
+    if (!drawCanvas.width) return;
+
+    const { output, counts } = checkChart();
+    validationOutput = output;
 
     // 3. Update Summary Stats
     const errorPercent = counts.total ? ((counts.invalid / counts.total) * 100).toFixed(2) : '0.00';
