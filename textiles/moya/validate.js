@@ -16,8 +16,11 @@ function rowDirection(dir, w, h) {
 
 // Validate the chart with its rows worked in direction dir. Reports only
 // the stitches where include(x, y) is true, though stitches outside that
-// area still count as neighbors. Adds to the output list and the counts.
-function validateRows(dir, isWhite, w, h, bottomIsWhite, include, out, counts) {
+// area still count as neighbors, unless exists(x, y) says they aren't
+// there at all (in the round, the stitch below a wedge's edge stitch: the
+// edge stitches are increases, with nothing below them). Adds to the
+// output list and the counts.
+function validateRows(dir, isWhite, w, h, bottomIsWhite, include, out, counts, exists = null) {
     const { rows, cols, at, down } = rowDirection(dir, w, h);
 
     // Pass 1: Pre-calculate "Correctness" (1 = Correct, 0 = Incorrect)
@@ -30,6 +33,9 @@ function validateRows(dir, isWhite, w, h, bottomIsWhite, include, out, counts) {
             correct[r * cols + c] = (isWhite(x, y) === expectedWhite) ? 1 : 0;
         }
     }
+
+    // Is there a stitch at row r, column c?
+    const has = (r, c) => r >= 0 && r < rows && (!exists || exists(...at(r, c)));
 
     // Pass 2: Identify Types
     for (let r = 0; r < rows; r++) {
@@ -54,18 +60,17 @@ function validateRows(dir, isWhite, w, h, bottomIsWhite, include, out, counts) {
             //                  would require row n (off the chart) to be top anchor and row n-2 to be bottom anchor.
             //              Top row (n-1) and next row (n-2) cannot be bottom anchors;
             //                  there is no stitch 2 rows up to connect to.
-            if (r > 0 && r < rows - 1) {
-                const dn = idx - cols;
-                const dn2 = idx - 2 * cols;
-                const up = idx + cols;
-
-                if (isCurrentCorrect && r > 1) {
-                    if (correct[dn] === 0 && correct[dn2] === 1) isTopAnchor = true;
-                } else {
-                    // current is wrong, but might be saved by a mosaic stitch
-                    // (the top anchor 'up' is marked when we process the next row)
-                    if (correct[up] === 1 && correct[dn] === 1) isHidden = true;
-                }
+            //              The top row CAN be a top anchor: it needs only the
+            //                  two rows below it.
+            //              The same goes for stitches with no stitch below
+            //                  (or above) them, like a wedge's edge increases.
+            if (isCurrentCorrect) {
+                if (has(r - 1, c) && has(r - 2, c) &&
+                    correct[idx - cols] === 0 && correct[idx - 2 * cols] === 1) isTopAnchor = true;
+            } else if (has(r + 1, c) && has(r - 1, c)) {
+                // current is wrong, but might be saved by a mosaic stitch
+                // (the top anchor 'up' is marked when we process the next row)
+                if (correct[idx + cols] === 1 && correct[idx - cols] === 1) isHidden = true;
             }
 
             if (isTopAnchor) {
@@ -108,9 +113,10 @@ function checkChart() {
         }
     } else if (validatesWedgeOnly()) {
         // In the round: every wedge is worked the same way up, so only the
-        // drawing wedge needs checking
-        validateRows('up', isWhite, w, h, bottomIsWhite,
-                     (x, y) => pixelInActiveDrawingArea(x, y, w, h), output, counts);
+        // drawing wedge needs checking. Its edge stitches are increases, so
+        // nothing outside the wedge counts as being below them.
+        const inWedge = (x, y) => pixelInActiveDrawingArea(x, y, w, h);
+        validateRows('up', isWhite, w, h, bottomIsWhite, inWedge, output, counts, inWedge);
     } else {
         validateRows('up', isWhite, w, h, bottomIsWhite, () => true, output, counts);
     }
