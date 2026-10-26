@@ -355,7 +355,7 @@ function render() {
 	drawSymmetryMask(ctx, w, h);
 
  	drawRowCheckers(ctx,w,h);
-	if (gridToggle.checked) drawGrid(ctx, w, h);
+	drawGrid(ctx, w, h);  // grid lines and/or stitch grid, per their toggles
 	drawRulers(ctx, w, h);
 	if (physicalRulersToggle.checked) drawPhysicalSizeRulers(ctx, w, h);
 	drawColumnSeparator(ctx, w, h);
@@ -370,6 +370,32 @@ function render() {
 	updateStatusWindow();
 	updateSymmetryWarning();
 }
+
+// Colors for the overlays drawn around and over the chart. The screen
+// colors are bright, for the dark editor background; the print colors are
+// darker, for white paper (Save Chart As PDF), where white row markers and
+// the edge of the chart also need an outline.
+const OVERLAY_SCREEN = {
+	background: "#1a1a1a",
+	ruler: "cyan",
+	physicalRuler: "#FFD700",            // gold, to tell it from the stitch ruler
+	grid: "rgba(0,255,255,0.4)",
+	stitchGrid: "rgba(127,127,255,0.8)",
+	separator: "#FF33FF",                // neon magenta
+	markerOutline: null,
+	chartOutline: null,
+};
+const OVERLAY_PRINT = {
+	background: "#ffffff",
+	ruler: "#00607a",                    // dark teal
+	physicalRuler: "#8a6400",            // dark gold
+	grid: "rgba(0,120,150,0.7)",
+	stitchGrid: "rgba(110,110,170,0.6)",
+	separator: "#c000c0",
+	markerOutline: "#808080",
+	chartOutline: "#000000",
+};
+let overlayColors = OVERLAY_SCREEN;
 
 function currentScale(ctx) {
     // Get the current canvas transformation matrix,
@@ -389,13 +415,13 @@ function drawGrid(c,w,h) {
 	const step = vs > 2 ? 10 : (vs > 0.5 ? 50 : 200);
 
     if (subGridToggle.checked) {
-        c.beginPath(); c.strokeStyle = "rgba(127,127,255,0.8)"; c.lineWidth = 1/vs;
+        c.beginPath(); c.strokeStyle = overlayColors.stitchGrid; c.lineWidth = 1/vs;
         for(let x=0; x<=w; x++) { c.moveTo(x,0); c.lineTo(x,h); }
         for(let y=0; y<=h; y++) { c.moveTo(0,y); c.lineTo(w,y); }
         c.stroke();
     }
     if (gridToggle.checked) {
-        c.beginPath(); c.strokeStyle = "rgba(0,255,255,0.4)"; c.lineWidth = 2/vs;
+        c.beginPath(); c.strokeStyle = overlayColors.grid; c.lineWidth = 2/vs;
         for(let x=step; x<=w; x+=step) { c.moveTo(w-x,0); c.lineTo(w-x,h); }
         for(let y=step; y<=h; y+=step) { c.moveTo(0,h-y); c.lineTo(w,h-y); }
         c.stroke();
@@ -429,7 +455,7 @@ function drawRulers(c,w,h) {
     const tickSize = 15 / vs; // Longer ticks to cross checkers
     const font = "12px monospace"; // screen pixels, see fillTextScreen
 
-    c.fillStyle = c.strokeStyle = "cyan";
+    c.fillStyle = c.strokeStyle = overlayColors.ruler;
     c.lineWidth = 2 / vs;
 
     // --- Horizontal Ruler (Bottom - RTL) ---
@@ -489,8 +515,7 @@ function drawPhysicalSizeRulers(c,w,h) {
 
     // Styling for the print ruler
     const font = "bold 14px sans-serif"; // screen pixels, see fillTextScreen
-    c.fillStyle = "#FFD700"; // Gold color to distinguish from pixel ruler
-    c.strokeStyle = "#FFD700";
+    c.fillStyle = c.strokeStyle = overlayColors.physicalRuler;
     c.lineWidth = 2 / vs;
 
 	// --- 1. VERTICAL RULER (Left Side - BTT) ---
@@ -540,16 +565,15 @@ function drawPhysicalSizeRulers(c,w,h) {
 // Add listener to re-render when toggled
 physicalRulersToggle.addEventListener('change', render);
 
-function drawRowCheckers(c,w,h) {
+function drawRowCheckers(c, w, h, bottomIsWhite = firstRowAToggle.checked) {
 	if (!drawCanvas.width) return;
     
     // Keep the row markers square: as wide on screen as one row is tall,
     // even when non-square stitches stretch the x axis
     const squareWidth = rowMarkerWidth(c);
     
-    // Determine the starting color based on the toggle
-    // If Bottom is White (true), then even/odd logic flips
-    const bottomIsWhite = firstRowAToggle.checked;
+    // The starting color comes from the First Row Color A toggle, unless
+    // the caller is drawing only part of the chart (see renderChartForExport)
 
     for (let row = 0; row < h; row++) {
         // Our system is Bottom-to-Top (BTT). 
@@ -565,6 +589,16 @@ function drawRowCheckers(c,w,h) {
         // Draw the square on the right side of the image
         // x: width of image, y: raw row coordinate, w: fixed visual width, h: 1 pixel
         c.fillRect(w, rawY, squareWidth, 1);
+    }
+
+    // On paper, outline the markers so the white ones show
+    if (overlayColors.markerOutline) {
+        c.strokeStyle = overlayColors.markerOutline;
+        c.lineWidth = 1 / viewState.scale;
+        c.strokeRect(w, 0, squareWidth, h);
+        c.beginPath();
+        for (let y = 1; y < h; y++) { c.moveTo(w, y); c.lineTo(w + squareWidth, y); }
+        c.stroke();
     }
 }
 
@@ -704,7 +738,7 @@ function drawColumnSeparator(c,w,h) {
 	const vs = viewState.scale;
 
     // Use a color that stands out from both black/white and your cyan rulers
-    c.strokeStyle = "#FF33FF"; // Neon Magenta/Pink
+    c.strokeStyle = overlayColors.separator;
     c.lineWidth = 3 / vs; // Maintain a 3-pixel screen width regardless of zoom
 
     c.beginPath();
