@@ -167,11 +167,42 @@ function updateStatusLine() {
         `<b>F</b> fits${sep}<b>?</b> shortcuts</span>`;
 }
 
-// Keep the Color A / Color B swatches in the current palette colors
+// Keep the Color A / Color B swatches (Mode and First row) in the
+// current palette colors
 function updateToolSwatches() {
     document.getElementById('toolSwatchA').style.background = colorAInput.value;
     document.getElementById('toolSwatchB').style.background = colorBInput.value;
+    document.getElementById('firstRowSwatchA').style.background = colorAInput.value;
+    document.getElementById('firstRowSwatchB').style.background = colorBInput.value;
 }
+
+// --- First row color (Information panel) ---
+// The hidden First Row Color A checkbox holds the setting; these buttons
+// show and change it. Changing it re-checks the chart, since every row's
+// expected color changes.
+
+const firstRowBtns = document.querySelectorAll('.first-row-btn');
+
+function syncFirstRowButtons() {
+    const a = firstRowAToggle.checked;
+    firstRowBtns.forEach(b => {
+        const on = (b.dataset.first === 'A') === a;
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-checked', on);
+    });
+}
+
+firstRowBtns.forEach(b => b.addEventListener('click', () => {
+    const a = b.dataset.first === 'A';
+    if (firstRowAToggle.checked === a) return;
+    firstRowAToggle.checked = a;
+    firstRowAToggle.dispatchEvent(new Event('change'));
+}));
+firstRowAToggle.addEventListener('change', () => {
+    syncFirstRowButtons();
+    if (validationStats) validateBtn.click();
+});
+syncFirstRowButtons();
 
 // Reset to white/black only does something once a color has changed
 function updateResetPaletteBtn() {

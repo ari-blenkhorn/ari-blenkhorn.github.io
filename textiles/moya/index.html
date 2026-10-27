@@ -24,6 +24,17 @@
 		<div class="sidebar-section">
             <h2>Information</h2>
             <div id="status" class="status-box">Waiting for image...</div>
+            <!-- Which color the first (bottom) row is worked in. Validation,
+                 the row-color markers, and repair all follow it. The checkbox
+                 holds the setting; the two buttons show and change it. -->
+            <div class="first-row-control">
+                <span class="first-row-label" id="firstRowLabel" title="The color of the first (bottom) row. Rows alternate from there; validation and the row-color markers follow it.">First row</span>
+                <div class="first-row-choice" role="radiogroup" aria-labelledby="firstRowLabel">
+                    <button class="first-row-btn" data-first="A" role="radio" title="The first (bottom) row is worked in Color A"><span class="tool-swatch" id="firstRowSwatchA"></span>Color A</button>
+                    <button class="first-row-btn" data-first="B" role="radio" title="The first (bottom) row is worked in Color B"><span class="tool-swatch" id="firstRowSwatchB"></span>Color B</button>
+                </div>
+                <input type="checkbox" id="firstRowA" checked hidden>
+            </div>
         </div>
 
 		<div class="sidebar-section collapsed">
@@ -32,49 +43,59 @@
 
 			<!-- Collapsible Content -->
 			<div class="section-content collapsed">
+				<!-- Size: unit, width and height, and the two commands that use them -->
+				<div class="sub-heading">Size</div>
 				<div class="control-group">
-					<label for="unitSelect" title="Set the chart size in stitches and rows, or in inches using your gauge">Unit:</label>
-					<select id="unitSelect" title="Set the chart size in stitches and rows, or in inches using your gauge">
-						<option value="px">Stitches/Rows</option>
-						<option value="in">Inches</option>
+					<label for="unitSelect" title="Give the size in stitches and rows, or in inches using your gauge">Measure in</label>
+					<select id="unitSelect" title="Give the size in stitches and rows, or in inches using your gauge">
+						<option value="px">Stitches and rows</option>
+						<option value="in">Inches (from your gauge)</option>
 					</select>
 				</div>
-
-				<div class="control-group">
-					<label for="targetDims">Width / Height:</label>
-					<div id="targetDims" style="display:flex; gap:5px;">
-						<input type="number" id="targetW" value="800" style="width:50%;" title="Chart width (stitches, or inches)">
-						<input type="number" id="targetH" value="600" style="width:50%;" title="Chart height (rows, or inches)">
-					</div>
-					<a href="#" id="resetResizeLink" style="font-size: 0.7rem; color: #007acc; text-decoration: underline; margin-top: 5px; display: inline-block;" title="Fill in the size the chart had when it was created or loaded">Reset to Original</a>
+				<div class="field-pair" id="targetDims">
+					<label title="Chart width">Width
+						<input type="number" id="targetW" value="800" title="Chart width (stitches, or inches)">
+						<span class="field-unit" id="targetWUnit">stitches</span></label>
+					<label title="Chart height">Height
+						<input type="number" id="targetH" value="600" title="Chart height (rows, or inches)">
+						<span class="field-unit" id="targetHUnit">rows</span></label>
 				</div>
-
 				<div class="toggle-group">
-					<input type="checkbox" id="lockAspect" checked title="Keep the width-to-height ratio when you change one value">
-					<label for="lockAspect" title="Keep the width-to-height ratio when you change one value">Lock Aspect Ratio of Image</label>
+					<input type="checkbox" id="lockAspect" checked title="When you change the width or height, change the other to keep the chart's proportions">
+					<label for="lockAspect" title="When you change the width or height, change the other to keep the chart's proportions">Keep proportions</label>
+					<a href="#" id="resetResizeLink" class="sub-link" title="Fill in the size the chart had when it was created or loaded">Original size</a>
+				</div>
+				<div class="button-pair">
+					<button id="btnNew" title="Start a new chart of this size, all Color A (Ctrl+Z to undo)">New Blank Chart</button>
+					<button id="btnResizeAllLayers" title="Stretch or shrink the chart (and reference image) to this size (Ctrl+Z to undo)">Resize Chart</button>
 				</div>
 
-				<!-- Gauge controls -->
-				<div id="gaugeControls" style="display:none;" class="control-group">
-					<label for="gauge">Gauge for 4x4 Inch Swatch (stitches/rows):</label>
-					<div id="gauge" style="display:flex; gap:5px;">
-						<input type="number" id="pp4h" value="20" style="width:50%;" title="Stitches in 4 inches, from your gauge swatch">
-						<input type="number" id="pp4v" value="20" style="width:50%;" title="Rows in 4 inches, from your gauge swatch">
+				<!-- Gauge: always shown; it sets inches, physical rulers, and non-square stitches -->
+				<div class="sub-heading">Gauge</div>
+				<div id="gaugeControls">
+					<div class="sub-note">Stitches and rows in 4 inches of your swatch. Used for sizes in inches, physical rulers, and non-square stitches.</div>
+					<div class="field-pair" id="gauge">
+						<label title="Stitches in 4 inches, from your gauge swatch">Stitches
+							<input type="number" id="pp4h" value="20" title="Stitches in 4 inches, from your gauge swatch"></label>
+						<label title="Rows in 4 inches, from your gauge swatch">Rows
+							<input type="number" id="pp4v" value="20" title="Rows in 4 inches, from your gauge swatch"></label>
 					</div>
-					<div id="gaugeDisplay" style="font-size: 0.75rem; color: #00ff00; margin-top: 5px;">
-						Per inch: 5 stitches x 5 rows
-					</div>
+					<div id="gaugeDisplay" class="sub-readout">Per inch: 5 stitches x 5 rows</div>
+					<button id="btnGauge" title="Use this gauge for the chart, adding or removing stitches and rows so it stays the same size in inches (Ctrl+Z to undo)">Apply Gauge (Keep Size in Inches)</button>
 				</div>
 
-				<!-- Action Buttons -->
-				<div class="button-stack">
-					<button id="btnNew" style="background-color: #f39c14; margin-top: 10px;" title="Start a new blank chart at this size (Ctrl+Z to undo)">Create Blank Chart</button>
-					<button id="btnResizeAllLayers" style="background-color: #e38c12; margin-top: 10px;" title="Resample the chart and reference image to this size (Ctrl+Z to undo)">Resize All Layers</button>
-					<button id="btnGauge" style="background-color: #d37c10; margin-top: 10px;" title="Apply the new gauge, resizing the chart to keep its physical size (Ctrl+Z to undo)">Change Gauge (Keep physical size)</button>
-					<button id="btnResizeChartToBG" style="background-color: #c36c0d; margin-top: 10px;" title="Make the chart the same size as the reference image; clears the chart (Ctrl+Z to undo)">Match Chart Size to Reference</button>
-					<button id="btnResizeBGToChart" style="background-color: #b35c0b; margin-top: 10px;" title="Resize the reference image to match the chart (work in progress)">Match Reference Size to Chart</button>
-					<button id="cropToSquareBtn" style="background-color: #d35400; margin-top: 10px;" title="Crop the chart and reference image to a centered square (Ctrl+Z to undo)">Crop to Square (Centered)</button>
-					<button id="expandToSquareBtn" style="background-color: #d35400; margin-top: 10px;" title="Add Color A rows or columns to make the chart square, keeping the design centered (Ctrl+Z to undo)">Expand to Square (Centered)</button>
+				<!-- Square: for the 4x and 8x symmetry modes -->
+				<div class="sub-heading">Make Square <span class="sub-heading-note">for 4x and 8x symmetry</span></div>
+				<div class="button-pair">
+					<button id="cropToSquareBtn" title="Crop the chart and reference image to a centered square (Ctrl+Z to undo)">Crop</button>
+					<button id="expandToSquareBtn" title="Add Color A rows or columns to make the chart square, keeping the design centered (Ctrl+Z to undo)">Expand</button>
+				</div>
+
+				<!-- Reference image: match its size and the chart's -->
+				<div class="sub-heading">Match Reference Image</div>
+				<div class="button-pair">
+					<button id="btnResizeChartToBG" title="Make a new blank chart the size of the reference image, one stitch per pixel (Ctrl+Z to undo)">Chart to Reference</button>
+					<button id="btnResizeBGToChart" title="Stretch or shrink the reference image to the chart's size, one pixel per stitch (Ctrl+Z to undo)">Reference to Chart</button>
 				</div>
 			</div>
 		</div>
@@ -139,6 +160,11 @@
 					<button id="ditherBtn" style="flex: 1; background-color: #9c27b0; margin-top: 10px;" title="Convert the reference image to a chart, using dithering to keep shading (Ctrl+Z to undo)">Dither</button>
 					<label for="ditherStrength" title="How much shading detail dithering keeps">Dither Strength: <span id="ditherVal">100</span>%</label>
 					<input type="range" id="ditherStrength" min="0" max="100" value="100" style="accent-color: #9c27b0;" title="How much shading detail dithering keeps">
+					<label for="ditherColors" title="Which two colors Dither matches the picture against">Dither to:</label>
+					<select id="ditherColors" title="Which two colors Dither matches the picture against">
+						<option value="bw">Black and white (A light, B dark)</option>
+						<option value="ab">Color A and Color B (your yarn colors)</option>
+					</select>
 				</div>
 				<div class="control-group">
 
@@ -162,14 +188,11 @@
 				</div>
 				<div class="control-group">
 					<button id="validateBtn" style="background-color: #f0ad4e; margin-top: 10px;" title="Check the chart and outline stitches that cannot be worked in mosaic (V)">Validate Chart (V)</button>
-					<div class="toggle-group">
-						<input type="checkbox" id="firstRowA" checked title="The first (bottom) row is worked in Color A">
-						<label for="firstRowA" title="The first (bottom) row is worked in Color A">First Row Color A</label>
-					</div>
 				</div>
 				<div class="control-group">
 					<button id="toggleInvalidBtn" style="background-color: #f0ad4e; margin-top: 10px;" title="Flip every invalid stitch to its row&#x27;s color (Ctrl+Z to undo)">Toggle All Invalid Stitches</button>
-					<button id="smartRepairBtn" style="background-color: #f0ad4e; margin-top: 10px;" title="Fix invalid stitches automatically (Ctrl+Z to undo)">Repair Invalid Stitches</button>
+					<!-- Hidden until smart repair is implemented (see repairInvalid in validate.js) -->
+					<button id="smartRepairBtn" hidden style="background-color: #f0ad4e; margin-top: 10px;" title="Fix invalid stitches automatically (Ctrl+Z to undo)">Repair Invalid Stitches</button>
 				</div>
 
 			</div>
@@ -388,15 +411,39 @@
 				<h3>1. Start a chart</h3>
 				<ul>
 					<li><b>From scratch:</b> open <b>Chart Size/Gauge</b>, set the width and height in stitches and rows
-						(or in inches, from your gauge), and click <b>Create Blank Chart</b>. The chart starts all Color A.</li>
+						(or in inches, from your gauge), and click <b>New Blank Chart</b>. The chart starts all Color A.</li>
 					<li><b>From an existing chart:</b> drop an image file onto the chart area, or choose it under
 						<b>Load/Save &rarr; Chart / Drawing Layer</b>. Each pixel becomes one stitch, so a chart saved with
 						<b>Save Raw Image</b> loads back exactly.</li>
 					<li><b>From a picture:</b> choose it under <b>Load/Save &rarr; Reference Image</b>. MoYa makes a blank chart
 						the same size and switches the <b>View</b> to <b>Trace Mode</b>, showing your chart over the picture.
-						Set the size you want in <b>Chart Size/Gauge</b> and click <b>Resize All Layers</b>. Then either draw
-						over the picture, or open <b>Image Processing + Validation</b> and click <b>Threshold</b> (light areas
-						become A, dark areas B) or <b>Dither</b> (keeps shading as a pattern of dots).</li>
+						Set the size you want in <b>Chart Size/Gauge</b> and click <b>Resize Chart</b>, which resizes the picture
+						too. Then draw over the picture, or let MoYa turn it into a chart (below).</li>
+				</ul>
+
+				<h3>Turning a picture into a chart</h3>
+				<p>Both commands are in <b>Image Processing + Validation</b>. Each replaces the whole chart with one stitch
+				per pixel of the reference picture, so set the size first. <kbd>Ctrl</kbd>+<kbd>Z</kbd> undoes them.</p>
+				<ul>
+					<li><b>Threshold</b> looks at how light each pixel is. Pixels at least as light as the <b>Threshold value</b>
+						become Color A; darker ones become Color B. Raise the value for more B, lower it for more A. Shading is
+						lost: every area is either A or B. Threshold doesn't follow the mosaic rules, so validate afterward.</li>
+					<li><b>Dither</b> keeps shading. For each stitch it picks whichever of your Color A and Color B is closer to
+						the pixel, then passes the difference on to the stitches next to it, so a gray area becomes a mix of A and
+						B stitches.
+						<ul>
+							<li><b>Dither to</b> chooses the two colors it matches against. <b>Black and white</b> goes by
+								lightness alone: light areas become A and dark areas B, whatever your colors are.
+								<b>Color A and Color B</b> matches against your display colors, so set them to your yarns first
+								(in the <b>Draw</b> menu); this can follow the picture's colors better when your yarns differ in
+								hue as well as lightness.</li>
+							<li><b>Dither Strength</b> is how much of the difference is passed on: at 100% you get the most
+								shading; at 0% each stitch is just the closer color, much like Threshold.</li>
+							<li><b>Serpentine Scan</b> works alternate rows in opposite directions, which avoids diagonal streaks.</li>
+							<li><b>Validate while Dithering</b> steers the result toward a chart that can be worked: the top and
+								bottom rows are kept in their row colors, and a stitch may take the other color only where it can
+								be a long stitch. Validate afterward to check.</li>
+						</ul></li>
 				</ul>
 
 				<h3>2. Draw</h3>
@@ -426,11 +473,20 @@
 
 				<h3>4. Check that it can be worked</h3>
 				<ul>
-					<li>Press <kbd>V</kbd> (or <b>Validate Chart</b> in <b>Image Processing + Validation</b>). Stitches that can't
-						be worked in mosaic are outlined in red, and the counts appear under <b>Information</b>. It updates as
-						you draw.</li>
-					<li><b>First Row Color A</b> sets which color the first row is worked in.</li>
-					<li><b>Toggle All Invalid Stitches</b> flips every red stitch to its row's color.</li>
+					<li><b>First row</b>, under <b>Information</b>, sets whether the first (bottom) row is Color A or Color B.
+						Rows alternate from there, and the markers to the right of the chart show each row's color.</li>
+					<li><b>Validate</b> (<kbd>V</kbd>, or <b>Validate Chart</b> in <b>Image Processing + Validation</b>) checks
+						every stitch against its row's color. A stitch in its row's color is fine. A stitch in the other color
+						is fine only as a long stitch: the stitches directly above and below it must both be in its color, so
+						the first and last rows can't have any. Every other stitch is outlined in red, and the counts appear
+						under <b>Information</b>. After you validate once, MoYa checks again after every change.</li>
+					<li>With symmetry, <b>4x</b> and <b>8x</b> check the whole chart, each quarter with its rows running along
+						its outer edge. <b>In-The-Round</b> checks only the drawing wedge; its diagonal edge stitches are
+						increases, with no stitch below them.</li>
+					<li><b>Toggle All Invalid Stitches</b> flips every red stitch to its row's color. That fixes those stitches,
+						but it can leave a neighbor that was part of a long stitch without its partner, so MoYa checks again
+						and outlines any new problems. Press it again, or fix the rest by hand; <kbd>Ctrl</kbd>+<kbd>Z</kbd>
+						undoes it.</li>
 					<li><b>Chart markings</b> in the <b>Display</b> menu mark the anchors of each long stitch, for knitting
 						(up) or crochet (down).</li>
 				</ul>

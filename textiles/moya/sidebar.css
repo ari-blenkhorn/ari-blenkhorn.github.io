@@ -216,3 +216,48 @@ input[type="number"] {
 	width: 30px;
 }
 
+
+/* Sub-sections inside a sidebar section (e.g. Chart Size/Gauge) */
+.sub-heading {
+	margin: 14px 0 6px;
+	padding-top: 8px;
+	border-top: 1px solid #3a3a3a;
+	font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em;
+	text-transform: uppercase; color: #8fd0ff;
+}
+.section-content > .sub-heading:first-child { margin-top: 4px; padding-top: 0; border-top: none; }
+.sub-heading-note { text-transform: none; letter-spacing: 0; font-weight: 400; color: #888; }
+.sub-note { font-size: 0.75rem; color: #999; line-height: 1.35; margin-bottom: 6px; }
+.sub-readout { font-size: 0.75rem; color: #00ff00; margin: -2px 0 8px; }
+.sub-readout .pending { color: #ffcc66; }
+.sub-link { margin-left: auto; font-size: 0.75rem; color: #6cb6ff; }
+
+/* Two labeled number fields side by side: label above, unit below */
+.field-pair { display: flex; gap: 8px; }
+.field-pair label {
+	flex: 1; display: flex; flex-direction: column; gap: 3px;
+	font-size: 0.75rem; color: #aaa;
+}
+.sidebar .field-pair input { margin-bottom: 0; }
+.field-unit { font-size: 0.7rem; color: #777; }
+
+/* Two related buttons side by side */
+.button-pair { display: flex; gap: 6px; margin-top: 8px; }
+.sidebar .button-pair button { flex: 1; padding: 8px 4px; margin-bottom: 4px; }
+
+/* First row: Color A | Color B, always visible under Information */
+.first-row-control { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.first-row-label { font-size: 0.85rem; color: #ccc; white-space: nowrap; }
+.first-row-choice {
+	flex: 1; display: flex;
+	border: 1px solid #5a5a5a; border-radius: 4px; overflow: hidden;
+}
+.sidebar .first-row-choice .first-row-btn {
+	flex: 1; width: auto; margin: 0; padding: 6px 4px;
+	display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+	background: #2e2e2e; color: #ccc; font-weight: normal;
+	border: none; border-left: 1px solid #5a5a5a; border-radius: 0;
+}
+.sidebar .first-row-choice .first-row-btn:first-child { border-left: none; }
+.sidebar .first-row-choice .first-row-btn:hover:not(.active) { background: #3c3c3c; color: #fff; }
+.sidebar .first-row-choice .first-row-btn.active { background: #1f6fa8; color: #fff; font-weight: 600; }

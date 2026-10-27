@@ -22,6 +22,8 @@ const brushValDisplay = document.getElementById('brushVal');
 const createNewBtn = document.getElementById('createNewBtn');
 const unitSelect = document.getElementById('unitSelect');
 const gaugeControls = document.getElementById('gaugeControls');
+const gaugeDisplay = document.getElementById('gaugeDisplay');
+const btnGauge = document.getElementById('btnGauge');
 const pp4hInput = document.getElementById('pp4h'); // stitches per 4 inches
 const pp4vInput = document.getElementById('pp4v'); // rows per 4 inches
 const factoryResetBtn = document.getElementById('factoryResetBtn');
@@ -40,11 +42,12 @@ const DEFAULTS = {
     newH: 60,
     newUnit: 'px',
     thresholdRange: 128,
+    ditherColors: 'bw',
     brushSize: 1,
     showGrid: true,
     showSubGrid: true,
     showphysicalRulersToggleRulers: false,
-    firstRowA: false,
+    firstRowA: true,
     showErrors: true,
 	showChartMarkings: true
 };
@@ -112,7 +115,6 @@ function resetToFactoryDefaults() {
     });
 
     // D. Specific UI cleanup
-    gaugeControls.style.display = 'none';
     updateGaugeDisplay();
 
     // E. Nothing to undo in a fresh workspace
@@ -130,18 +132,22 @@ factoryResetBtn.addEventListener('click', () => {
 });
 
 
-// Show/Hide pixels-per-inch controls based on unit selection
-unitSelect.addEventListener('change', () => {
-    gaugeControls.style.display = unitSelect.value === 'in' ? 'block' : 'none';
-});
-// Update the visible gauge calculation
+// Update the visible gauge calculation, and say when the gauge typed in
+// isn't the one the chart uses yet (Apply Gauge or a new chart applies it)
 function updateGaugeDisplay() {
     const pph = parseFloat(pp4hInput.value) / 4;
     const ppv = parseFloat(pp4vInput.value) / 4;
+    if (isNaN(pph) || isNaN(ppv)) return;
 
-    if (!isNaN(pph) && !isNaN(ppv)) {
-        gaugeDisplay.innerText = `Per inch: ${pph.toFixed(1)} stitches x ${ppv.toFixed(1)} rows`;
+    let text = `Per inch: ${pph.toFixed(1)} stitches x ${ppv.toFixed(1)} rows`;
+    const applied = appliedGauge();
+    const same = Math.abs(applied.pph - pph) < 1e-6 && Math.abs(applied.ppv - ppv) < 1e-6;
+    if (!same && pp4hInput.dataset.oldGauge) {
+        text += `<br><span class="pending">Not applied yet: the chart uses ` +
+                `${applied.pph.toFixed(1)} x ${applied.ppv.toFixed(1)}</span>`;
     }
+    gaugeDisplay.innerHTML = text;
+    btnGauge.disabled = same;
 }
 
 // Listen for changes to the 4-inch inputs

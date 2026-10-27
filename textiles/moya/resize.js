@@ -9,6 +9,7 @@ function setTargetDimensions(w,h,units)
 	document.getElementById('targetH').value = h;
 	unitSelect.value = units;
 	unitSelect.dataset.prevUnit = units;
+	updateSizeUnits();
 }
 
 // Current gauge in stitches and rows per inch
@@ -24,12 +25,20 @@ function setSizeFields(w, h, unit) {
     targetH.value = (unit === 'px') ? Math.round(h) : h.toFixed(2);
 }
 
+// Units shown under the width and height fields
+function updateSizeUnits() {
+    const inches = unitSelect.value === 'in';
+    document.getElementById('targetWUnit').textContent = inches ? 'inches' : 'stitches';
+    document.getElementById('targetHUnit').textContent = inches ? 'inches' : 'rows';
+}
+
 /** Convert the width/height fields when the unit dropdown changes **/
 unitSelect.dataset.prevUnit = unitSelect.value;
 unitSelect.addEventListener('change', () => {
     const from = unitSelect.dataset.prevUnit;
     const to = unitSelect.value;
     unitSelect.dataset.prevUnit = to;
+    updateSizeUnits();
     if (from === to) return;
 
     const w = parseFloat(targetW.value);
@@ -105,6 +114,7 @@ document.getElementById('btnGauge').addEventListener('click', () => {
     const oldAspectX = aspectToggle.checked ? (oldPpv / oldPph) : 1;
     recordUndo('gauge change', { bg: true });  // before the new gauge is applied
     updateGaugeReference();
+    updateGaugeDisplay();
     performResizeAll(targetW, targetH, oldAspectX);
 
 	// these might be redundant, as performResizeAll does them at the end
@@ -191,8 +201,6 @@ const btnResizeBGToChart = document.getElementById('btnResizeBGToChart');
 
 /** Match Background Layer size to Drawing Layer size **/
 btnResizeBGToChart.addEventListener('click', () => {
-    alert("WIP - resize BG to Chart size");
-
     // 1. Check whether layers exist
     if (!drawCanvas.width || !drawCanvas.height) {
         alert("Please create a chart layer first.");
@@ -211,24 +219,14 @@ btnResizeBGToChart.addEventListener('click', () => {
     const targetW = drawCanvas.width;
     const targetH = drawCanvas.height;
 
-    // 4. Resample BG into new size
-    // TODO - confirm
+    // 4. Resample BG into the new size (the chart itself is unchanged)
+    recordUndo('match reference to chart', { bg: true });
     const resizedBg = resizeLayer(bgCanvas, targetW, targetH);
-    bgCanvas = resizedBg;
+    bgCanvas.width = targetW;
+    bgCanvas.height = targetH;
+    bgCtx.imageSmoothingEnabled = false;
+    bgCtx.drawImage(resizedBg, 0, 0);
 
-    // 5. Reset states
-    activePixel = null;
-    validationOutput = [];
-    validationStats = null;
-    isStatsDirty = false;
-    setDirty(true);
-
-    // 6. Recalculate zoom/centering and refresh
-    resetView();
-
-    // 7. Force the display buffer to update immediately
-    // so render() has new pixel data to draw
-    updateDisplayBuffer();
     render();
 
     console.log(`Resized Reference Layer from ${oldW} x ${oldH} to ${drawCanvas.width} x ${drawCanvas.height}`);
@@ -396,6 +394,7 @@ function updateGaugeReference() {
 
     pp4h.dataset.oldGauge = pph;
     pp4v.dataset.oldGauge = ppv;
+    if (typeof updateGaugeDisplay === 'function') updateGaugeDisplay();
 }
 
 document.getElementById('cropToSquareBtn').addEventListener('click', () => {

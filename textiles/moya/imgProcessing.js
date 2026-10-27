@@ -6,6 +6,7 @@ const ditherStrength = document.getElementById('ditherStrength');
 const ditherValDisplay = document.getElementById('ditherVal');
 const serpentineScan = document.getElementById('serpentineScan');
 const validateWhileDithering = document.getElementById('validateWhileDithering');
+const ditherColors = document.getElementById('ditherColors');
 
 /** GLOBAL COMMANDS **/
 
@@ -217,6 +218,10 @@ function GetPixelAsColor3(pxArray, x, y, w)
 document.getElementById('ditherBtn').addEventListener('click', () => {
 	/* Floyd-Steinberg with dither strength slider and boustrodephon option */
     processBackgroundToDrawing((id, palette) => {
+        // Match against black and white (A light, B dark), or against the
+        // display colors of A and B. Either way palette[0] is A.
+        if (ditherColors.value !== 'ab') palette = [Color3.white(), Color3.black()];
+
         const w = id.width;
         const h = id.height;
         const d = id.data;
@@ -235,14 +240,29 @@ document.getElementById('ditherBtn').addEventListener('click', () => {
         if (h % 2 == 0)
             firstRowColorIdx = 1 - firstRowColorIdx;
 
-        // Copy the source image into a new image
-        // (we're going to modify the input image as we go)
-        let pixels = new Float32Array(d.length);
-        for (let p = 0; p < d.length; p++) 
-            pixels[p] = d[p];
+        // Each pixel as a single value t: how far it is from B (0) toward A (1).
+        // Dithering spreads the error in t, not in red, green and blue: a mix
+        // of two colors can only make shades on the line between them, so
+        // error in any other direction (a blue sky's blueness, say, when
+        // dithering to black and white) can never be paid off, and it piles
+        // up until whole columns come out solid. For black and white, t is
+        // the pixel's lightness. Pixels beyond A or B count as A or B, for the
+        // same reason.
+        const [colA, colB] = palette;
+        const ab = [colA.r - colB.r, colA.g - colB.g, colA.b - colB.b];
+        const abLen2 = ab[0] * ab[0] + ab[1] * ab[1] + ab[2] * ab[2] || 1;
+        const toT = (ditherColors.value !== 'ab')
+            ? (r, g, b) => (r * 0.299 + g * 0.587 + b * 0.114) / 255
+            : (r, g, b) => ((r / 255 - colB.r) * ab[0] + (g / 255 - colB.g) * ab[1] + (b / 255 - colB.b) * ab[2]) / abLen2;
+        const t = new Float32Array(w * h);
+        for (let p = 0; p < w * h; p++) {
+            t[p] = Math.max(0, Math.min(1, toT(d[p * 4], d[p * 4 + 1], d[p * 4 + 2])));
+        }
+        const isA = new Uint8Array(w * h);  // the result: 1 for A, 0 for B
 
         // Set up 'forced' flags if needed
-        const forced = (validateWhileDithering) ? new PixelLock(w, h) : [];
+        const keepValid = validateWhileDithering.checked;
+        const forced = keepValid ? new PixelLock(w, h) : [];
         
         // Confirmed:  y looping from 0 --> h-1  is filling in the chart TOP DOWN
         // so locking (x,y+1) is locking the pixel BELOW current, as desired
@@ -261,12 +281,11 @@ document.getElementById('ditherBtn').addEventListener('click', () => {
                 const pixNum = (y * w + x);
                 const i =  pixNum * 4;
 
-                const oldColor = GetPixelAsColor3(pixels, x, y, w);
-                let newColor = FindClosestPaletteColor(oldColor, palette);
+                let newColor = t[pixNum] >= 0.5 ? colA : colB;
                 //if (y < 4)
                 //    console.log( `(${x},${y}) old, paletteMatch: ${Color3.toHex(oldColor)}, ${Color3.toHex(newColor)}`  );
 
-                if (validateWhileDithering) 
+                if (keepValid)
                 {
                     // handle mosaic restrictions, change newColor if needed
 
@@ -368,34 +387,40 @@ document.getElementById('ditherBtn').addEventListener('click', () => {
                 d[i+1] = newColor.g * 255;
                 d[i+2] = newColor.b * 255;
 
+                isA[pixNum] = newColor === colA ? 1 : 0;
+
                 // Calculate error and apply user-defined strength
-                const errR = (pixels[i]   - d[i])   * strength;
-                const errG = (pixels[i+1] - d[i+1]) * strength;
-                const errB = (pixels[i+2] - d[i+2]) * strength;
+                const err = (t[pixNum] - isA[pixNum]) * strength;
 
                 // Adjust neighbor offsets based on direction
                 const dir = reverse ? -1 : 1;
 
                 // Diffuse Error: Right(7), Bottom-Left(3), Bottom(5), Bottom-Right(1)
-                distributeError(pixels, x + dir, y,     w, h, errR, errG, errB, 7/16);
-                distributeError(pixels, x - dir, y + 1, w, h, errR, errG, errB, 3/16);
-                distributeError(pixels, x,       y + 1, w, h, errR, errG, errB, 5/16);
-                distributeError(pixels, x + dir, y + 1, w, h, errR, errG, errB, 1/16);
+                distributeError(t, x + dir, y,     w, h, err, 7/16);
+                distributeError(t, x - dir, y + 1, w, h, err, 3/16);
+                distributeError(t, x,       y + 1, w, h, err, 5/16);
+                distributeError(t, x + dir, y + 1, w, h, err, 1/16);
             }
+        }
+
+        // The chart layer holds A as white and B as black (the palette only
+        // colors the display), so store each stitch that way, not in the
+        // palette colors it was matched to
+        for (let p = 0; p < w * h; p++) {
+            const v = isA[p] ? 255 : 0;
+            d[p * 4] = d[p * 4 + 1] = d[p * 4 + 2] = v;
+            d[p * 4 + 3] = 255;
         }
         return id;
     }, 'dither');
 });
 
-/** Helper to safely add error to a neighbor pixel **/
-function distributeError(px, x, y, w, h, er, eg, eb, weight) {
-    if (x < 0 || x >= w || y >= h) 
+/** Helper to safely add error to a neighbor pixel (t: one value per pixel) **/
+function distributeError(t, x, y, w, h, err, weight) {
+    if (x < 0 || x >= w || y >= h)
         return;
 
-    const i = (y * w + x) * 4;
-    px[i]   += er * weight;
-    px[i+1] += eg * weight;
-    px[i+2] += eb * weight;
+    t[y * w + x] += err * weight;
 }
 /** 
      * Return black or white, whichever is closest to cOld
