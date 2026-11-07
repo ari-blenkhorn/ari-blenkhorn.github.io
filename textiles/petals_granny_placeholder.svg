@@ -1,11 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-labelledby="t">
-  <title id="t">Photo coming soon</title>
-  <rect x="1" y="1" width="398" height="298" fill="#e3e9ef" stroke="#b9cdd3" stroke-width="2" stroke-dasharray="10 6"/>
-  <!-- Half hexagon, full hexagon, half hexagon: the Petals layout -->
-  <g fill="none" stroke="#1f3a5f" stroke-width="2.5" stroke-linejoin="round">
-    <polygon points="200,60 252,90 252,150 200,180 148,150 148,90"/>
-    <polygon points="120,60 68,90 68,150 120,180"/>
-    <polygon points="280,60 332,90 332,150 280,180"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 230" width="400" height="230" role="img" aria-labelledby="t d">
+  <title id="t">Petals Cardigan construction diagram</title>
+  <desc id="d">The Petals Cardigan laid out flat. The back is a hexagon. Each front is three full wedges and two half-wedges of a larger hexagon, centered on a side corner of the back; the long edges of the two half-wedges are seamed to the back's two sides at that corner.</desc>
+  <rect width="400" height="230" fill="#e3e9ef"/>
+
+  <!-- Geometry: the back is a flat-topped hexagon with side 80, centered at (200,115).
+       Each front is centered on a side corner of the back (120,115 and 280,115).
+       Its half-wedges' heights run along the back's sides, so its apothem is 80
+       and its corner radius is 92.4. -->
+
+  <!-- Pieces -->
+  <g stroke="#1f3a5f" stroke-width="2.5" stroke-linejoin="round">
+    <polygon fill="#c9d6e2" points="120,115 160,45.7 120,22.6 40,68.8 40,161.2 120,207.4 160,184.3"/>
+    <polygon fill="#c9d6e2" points="280,115 240,45.7 280,22.6 360,68.8 360,161.2 280,207.4 240,184.3"/>
+    <polygon fill="#f2e3a6" points="280,115 240,45.7 160,45.7 120,115 160,184.3 240,184.3"/>
   </g>
-  <text x="200" y="230" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="20" fill="#1f3a5f">Photo coming soon</text>
+
+  <!-- Wedges: dashed lines from each piece's center to its corners -->
+  <g stroke="#1f3a5f" stroke-width="1" stroke-dasharray="4 3" fill="none">
+    <path d="M200 115 L280 115 M200 115 L240 45.7 M200 115 L160 45.7 M200 115 L120 115 M200 115 L160 184.3 M200 115 L240 184.3"/>
+    <path d="M120 115 L120 22.6 M120 115 L40 68.8 M120 115 L40 161.2 M120 115 L120 207.4"/>
+    <path d="M280 115 L280 22.6 M280 115 L360 68.8 M280 115 L360 161.2 M280 115 L280 207.4"/>
+  </g>
+
+  <!-- Labels -->
+  <g font-family="Georgia, 'Times New Roman', serif" font-size="16" fill="#1f3a5f" text-anchor="middle">
+    <text x="200" y="146">back</text>
+    <text x="72" y="120">front</text>
+    <text x="328" y="120">front</text>
+  </g>
 </svg>
